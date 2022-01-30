@@ -1,0 +1,15 @@
+{
+    "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/nodemon.json",
+    "restartable": "rs",
+    "verbose": true,
+    "watch": [
+        "src/**/*"
+    ],
+    "execMap": {
+        "ts": "ts-node"
+    },
+    "ignore": [ ],
+    "env": {
+        "NODE_ENV": "development"
+    }
+}

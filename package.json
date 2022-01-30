@@ -1,0 +1,50 @@
+{
+  "name": "glados-bot",
+  "description": "A simple discord bot.",
+  "version": "2.0.0",
+  "main": "./build/main.js",
+  "engines": {
+    "node": "16.13.0",
+    "npm": "8.3.0",
+    "yarn": "1.22.17"
+  },
+  "scripts": {
+    "start": "nodemon --exec \"npx ts-node -r tsconfig-paths/register\" ./src/main.ts",
+    "build": "yarn run clean && tsc && yarn run copy-files",
+    "clean": "rimraf build/",
+    "copy-files": "copyfiles -u 1 -e 'src/**/*{.js,.ts}' src/**/* build/",
+    "typeorm": "node -r ts-node/register ./node_modules/typeorm/cli.js",
+    "migration:generate": "yarn run typeorm migration:generate --name",
+    "migration:run": "yarn run typeorm migration:run",
+    "migration:create": "yarn run typeorm migration:create --name"
+  },
+  "repository": "https://github.com/gabrielpda15/glados-bot.git",
+  "author": "Gabriel Pupim <gabriel.pda15@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@types/ffmpeg-static": "^3.0.1",
+    "@types/glob": "^7.2.0",
+    "@types/node": "^17.0.8",
+    "@types/uuid": "^8.3.4",
+    "copyfiles": "^2.4.1",
+    "nodemon": "^2.0.15",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@discordjs/opus": "^0.7.0",
+    "@discordjs/voice": "^0.8.0",
+    "discord.js": "^13.6.0",
+    "dotenv": "^12.0.3",
+    "ffmpeg-static": "^4.4.1",
+    "glob": "^7.2.0",
+    "mysql": "^2.18.1",
+    "reflect-metadata": "^0.1.13",
+    "tsconfig-paths": "^3.12.0",
+    "tweetnacl": "^1.0.3",
+    "typeorm": "^0.2.41",
+    "uuid": "^8.3.2"
+  }
+}
