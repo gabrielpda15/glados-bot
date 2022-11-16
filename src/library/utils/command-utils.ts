@@ -1,6 +1,6 @@
+import { databaseService } from '@app/main';
 import { Config } from '@app/models/configuration/config';
 import { GuildMember } from 'discord.js';
-import { DiscordBot } from '../discord/discord-bot';
 
 async function clearUserRoles(target: GuildMember) {
     for (let role of target.roles.cache.values()) {
@@ -9,9 +9,8 @@ async function clearUserRoles(target: GuildMember) {
     }
 }
 
-async function getConfig(bot: DiscordBot): Promise<{ [key: string]: string }> {
-    const connection = await bot.getDbConnection();
-    const repo = connection.getRepository(Config);
+async function getConfigs(): Promise<{ [key: string]: string }> {
+    const repo = databaseService.getRepository(Config);
     const result = await repo.createQueryBuilder().getMany();
     return result.reduce((acc, cv) => {
         acc[cv.key] = cv.value;
@@ -21,5 +20,5 @@ async function getConfig(bot: DiscordBot): Promise<{ [key: string]: string }> {
 
 export default { 
     clearUserRoles, 
-    getConfig 
+    getConfigs 
 };

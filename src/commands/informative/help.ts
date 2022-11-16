@@ -1,7 +1,7 @@
 import { DiscordCommand, DiscordCommandInstance } from "@app/library/discord/discord-command";
 import { Command } from '@app/library/discord/discord-decorators';
 import { createEmbed, findSimilarStrings, groupBy } from '@app/library/utils';
-import { MessageEmbed, PermissionResolvable } from "discord.js";
+import { EmbedBuilder, PermissionsString } from "discord.js";
 
 // TODO: Melhorar listagem do help para implementar o sistema de subcommando
 @Command()
@@ -12,41 +12,47 @@ export class Help implements DiscordCommand {
     public aliases: string[] = ['help', 'ajuda', 'comandos'];
     public usage: string[] = ['', '<nome do comando>'];
     public category: DiscordCommand.Category = DiscordCommand.Category.INFORMATIVE;
-    public permission: PermissionResolvable = null;
+    public permission: PermissionsString = null;
     public onlyOwner: boolean = false;
+    public defer: DiscordCommand.DeferType = DiscordCommand.DeferType.NO;
     public requiredArgs: number = 0;
+    public args: DiscordCommand.Argument[] = [
+        new DiscordCommand.Argument('String', 'comando', 'Nome do comando para ver detalher sobre.', false)
+    ];
 
-    public async execute(e: DiscordCommand.ExecuteArgs): Promise<any> {
-        let embed: MessageEmbed;
+    public async execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any> {
+        let embed: EmbedBuilder;
 
-        if (e.args && e.args.length > 0) {
+        if (e.args && e.args.length > 0 && e.args[0]) {
             embed = this.getCommandHelp(e);
         } else {
             embed = this.getCommandList(e.bot.commands.values());
         }
 
-        await e.send({ embeds: [embed] });
+        await e.reply([ embed.data ]);
     }
 
-    private getCommandList(commands: DiscordCommandInstance[]): MessageEmbed {
+    private getCommandList(commands: DiscordCommandInstance[]): EmbedBuilder {
         let embed = createEmbed(
             'Lista de comandos',
-            `Utilize \`${process.env.prefix}help <nome do comando>\` para obter ajuda mais detalhada!`);
+            `Utilize \`${process.env.PREFIX}help <nome do comando>\` para obter ajuda mais detalhada!`);
 
         const groups = groupBy(commands, (i) => i.main.category, (i) => `\`${i.main.aliases[0]}\``);
 
         for (let key in groups) {
             const desc = groups[key].join(', ');
-            if (desc != null && desc.trim() != '') embed.addField(key, desc);
+            if (desc != null && desc.trim() != '') embed.addFields({ name: key, value: desc });
         }
 
         return embed;
     }
 
-    private getCommandHelp(e: DiscordCommand.ExecuteArgs): MessageEmbed {
-        let embed: MessageEmbed;
+    private getCommandHelp(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): EmbedBuilder {
+        let embed: EmbedBuilder;
         const cmdResult = e.bot.getCommand(...e.args);
         const cmd = cmdResult.command;
+
+        console.log('here!');
 
         if (cmd == null) {
             // TODO: Melhorar implementação do similar
@@ -67,7 +73,10 @@ export class Help implements DiscordCommand {
             temp = cmd.usage.map(x => x == '' ? cmdPrefix : `${cmdPrefix} ${x}`)
                 .map(x => `\`${x}\``).join(', ');
             if (temp != null && temp.trim() != '')
-                embed.addField(cmd.usage.length == 1 ? 'Uso' : 'Usos', temp);
+                embed.addFields({
+                    name: cmd.usage.length == 1 ? 'Uso' : 'Usos', 
+                    value: temp
+                });
         }
 
         if (cmd.aliases && cmd.aliases.length > 0) {
@@ -77,7 +86,10 @@ export class Help implements DiscordCommand {
             }
             temp = cmd.aliases.map(x => `\`${aliasPrefix}${x}\``).join(', ');
             if (temp != null && temp.trim() != '')
-                embed.addField(cmd.aliases.length == 1 ? 'Atalho' : 'Atalhos', temp);
+                embed.addFields({
+                    name: cmd.aliases.length == 1 ? 'Atalho' : 'Atalhos', 
+                    value: temp
+                });
         }
 
         return embed;

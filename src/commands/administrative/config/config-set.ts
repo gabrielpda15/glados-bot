@@ -1,5 +1,5 @@
 import { DiscordCommand } from '@app/library/discord/discord-command';
-import { PermissionResolvable, Permissions } from 'discord.js';
+import { PermissionsString } from 'discord.js';
 
 export class ConfigSet implements DiscordCommand {
 
@@ -8,11 +8,16 @@ export class ConfigSet implements DiscordCommand {
     public aliases: string[] = [ 'set' ];
     public usage: string[] = [ '<chave> <valor>' ];
     public category: DiscordCommand.Category = DiscordCommand.Category.ADMINISTRATIVE;
-    public permission: PermissionResolvable = Permissions.FLAGS.MANAGE_GUILD;
+    public permission: PermissionsString = 'ManageGuild';
     public onlyOwner: boolean = false;
+    public defer: DiscordCommand.DeferType = DiscordCommand.DeferType.NO;
     public requiredArgs: number = 2;
+    public args: DiscordCommand.Argument[] = [
+        new DiscordCommand.Argument('String', 'chave', 'A chave da configuração', true),
+        new DiscordCommand.Argument('String', 'valor', 'O valor da configuração', true)
+    ];
 
-    public async execute(e: DiscordCommand.ExecuteArgs): Promise<any> {
+    public async execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any> {
         console.log('Config Set!');
     }
 

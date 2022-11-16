@@ -1,3 +1,4 @@
+import { databaseService } from '@app/main';
 import { Activity } from '@app/models/configuration/activity';
 import * as discord from 'discord.js';
 import { DiscordBot } from '../discord/discord-bot';
@@ -8,10 +9,10 @@ const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 function getIntents(): number {
     let intents: number = null;
 
-    for (let item in discord.Intents.FLAGS) {
+    for (let item in discord.IntentsBitField.Flags) {
         if (item != 'GUILD_PRESENCES' && item != 'GUILD_MEMBERS') {
-            if (intents == null) intents = discord.Intents.FLAGS[<discord.IntentsString>item];
-            else intents = intents | discord.Intents.FLAGS[<discord.IntentsString>item];
+            if (intents == null) intents = <any>discord.IntentsBitField.Flags[item];
+            else intents = intents | <any>discord.IntentsBitField.Flags[item];
         }
     }
 
@@ -19,7 +20,7 @@ function getIntents(): number {
 }
 
 function createEmbed(title?: string, desc?: string) {
-    let embed = new discord.MessageEmbed();
+    let embed = new discord.EmbedBuilder();
     if (title) embed = embed.setTitle(title);
     if (desc) embed = embed.setDescription(desc);
 
@@ -32,8 +33,7 @@ function createEmbed(title?: string, desc?: string) {
 }
 
 async function startActivityLoop(bot: DiscordBot, delay: number = 10000) {
-    const connection = await bot.getDbConnection();
-    const repo =  connection.getRepository(Activity);
+    const repo =  databaseService.getRepository(Activity);
     const activities = await repo.createQueryBuilder().getMany();
     if (activities.length > 0) activityLoop(bot, activities.map(x => x.description), 0, delay);
 }
@@ -49,7 +49,7 @@ function getCommandArguments(args: string): string[] {
     const regex = /("(\\"|[^"])+"|[^\s"]+)/g;
     const match = args.match(regex);
     return match.map(x => {
-        if (x.startsWith('"') && x.endsWith('"')) return x.substr(1, x.length - 2);
+        if (x.startsWith('"') && x.endsWith('"')) return x.substring(1, x.length - 2);
         return x;
     });
 }

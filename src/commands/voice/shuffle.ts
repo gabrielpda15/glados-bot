@@ -1,13 +1,15 @@
 import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Command } from '@app/library/discord/discord-decorators';
+import { DiscordVoiceData, VoiceTrack } from '@app/library/discord/discord-voice';
+import { shuffleArray } from '@app/library/utils';
 import { PermissionsString } from 'discord.js';
 
 @Command()
-export class Join implements DiscordCommand {
+export class Shuffle implements DiscordCommand {
 
-    public name: string = 'Join';
-    public description: string = 'Faz eu entrar em um chat de voz!';
-    public aliases: string[] = [ 'join', 'j' ];
+    public name: string = 'Shuffle';
+    public description: string = 'Embaralha a fila de músicas atual';
+    public aliases: string[] = [ 'shuffle', 'random', 'aleatorio', 'sf' ];
     public usage: string[] = [ '' ];
     public category: DiscordCommand.Category = DiscordCommand.Category.VOICE;
     public permission: PermissionsString = null;
@@ -18,26 +20,29 @@ export class Join implements DiscordCommand {
 
     public async execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any> {
         const channel = await e.getMemberVoiceChannel();
-        
+
         if (!channel) {
             await e.reply('Desculpe, mas você não está em um canal de voz!');
             return;
         }
 
-        if (!channel.joinable) {
-            await e.reply('Desculpe, mas não consigo entrar no mesmo canal de voz que você!');
-            return;
-        }
+        let voice: DiscordVoiceData = null;
 
         try {
-            await e.getVoiceData(true);
+            voice = await e.getVoiceData();
         } catch (err: any) {
             await e.reply(err);
             return;
         }
 
+        let queue = voice.queue.slice(0);
+        const curTrack = queue.shift();
+        queue = shuffleArray(queue);
+        queue.unshift(curTrack);
+        voice.queue = queue;
+
         if (e.isMessage()) await e.react('✅');
-        else if (e.isInteraction()) await e.reply('Estou me juntando com vocês!', false);
+        else if (e.isInteraction()) await e.reply('Fila aleatórizada!', false);
     }
 
 }

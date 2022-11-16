@@ -1,23 +1,18 @@
-import { Client, Collection, Message } from 'discord.js';
-import glob from 'glob';
-import path from 'path';
+import { Client, Guild, PermissionFlagsBits, REST, Routes, SlashCommandBuilder, SlashCommandSubcommandBuilder } from 'discord.js';
 import { v4 as uuid } from 'uuid';
-import { Connection, ConnectionOptions, createConnection, getConnectionOptions } from 'typeorm';
-import { getCommandArguments, getIntents, log, startActivityLoop } from '../utils';
-import { DiscordCache } from './discord-cache';
-import { DiscordCommand, DiscordCommandInstance, DiscordCommandResult } from './discord-command';
-import { DiscordOptions } from './discord-options';
-import { ConsoleLogger } from '../typeorm/logger';
-import { Command, COMMAND_KEYS, SUBCOMMANDS_LIST } from './discord-decorators';
 import { Dictionary } from '../types';
+import { DiscordEvent } from './discord-event';
+import { getIntents, glob, log } from '../utils';
+import { DiscordCache } from './discord-cache';
+import { DiscordOptions } from './discord-options';
+import { DiscordCommand, DiscordCommandInstance, DiscordCommandResult } from './discord-command';
+import { Command, COMMAND_KEYS, Event, EVENTS_KEYS, SUBCOMMANDS_LIST } from './discord-decorators';
 
 export class DiscordBot extends Client {
 
-    private connectionName: string;
-    private connectionOptions: ConnectionOptions;
-    private connection: Connection;
-
     public cache: DiscordCache;
+
+    private slashCommands: SlashCommandBuilder[];
     public commands: Dictionary<DiscordCommandInstance>;
     public commandsMapper: Dictionary<string>;
 
@@ -25,21 +20,10 @@ export class DiscordBot extends Client {
         super(options);
 
         this.cache = new DiscordCache();
+
+        this.slashCommands = [];
         this.commands = Dictionary.create<DiscordCommandInstance>();
         this.commandsMapper = Dictionary.create<string>();
-
-        this.connectionName = options?.connectionName;
-    }
-
-    public async getDbConnection(): Promise<Connection> {
-        if (this.connection) {
-            return this.connection;
-        } else {
-            this.connectionOptions = await getConnectionOptions(this.connectionName);
-            Object.assign(this.connectionOptions, { logger: new ConsoleLogger() });
-            this.connection = await createConnection(this.connectionOptions);
-            return this.connection;
-        }
     }
 
     public static create(): DiscordBot {
@@ -50,44 +34,110 @@ export class DiscordBot extends Client {
     }
 
     public async initialize(): Promise<void> {
-        return new Promise<void>((res, rej) => {
-            glob(path.resolve(__dirname, '../../commands/**/*{.js,.ts}'), async (err, matches) => {
-                if (err) rej(err);
+        await this.loadCommands();
+        await this.loadEvents();
+    }
 
-                try {
-                    matches = matches.map(x => path.normalize(x));
-                
-                    for (let file of matches) {
-                        await import(file);
-                    }
-    
-                    const mainCommands: Dictionary<DiscordCommand> = Reflect.getMetadata(COMMAND_KEYS, Command);
-                    const subCommands: Dictionary<Dictionary<DiscordCommand>> = Reflect.getMetadata(SUBCOMMANDS_LIST, Command);
-                    
-                    for (let item of mainCommands) {
-                        let id: string;
-                        do { id = uuid() } while(this.commands.has(id));
-                        item.value.aliases.forEach(cmd => {
-                            this.commandsMapper[cmd] = id;
-                        });
-    
-                        const sc = subCommands[item.value.aliases[0]]?.values() ?? [];
-                        const dci = DiscordCommandInstance.create(item.value, ...sc);
-    
-                        this.commands.set(id, dci);
-                    }
-                    
-                    res();
-                } catch(err) {
-                    rej(err);
-                }                
+    private async loadCommands(): Promise<void> {
+        log('Loading commands...', 'Discord', 'info');
+
+        const matches = await glob('commands/**/*{.js,.ts}');
+
+        if (matches.length == 0) {
+            log('No commands has been loaded!', 'Discord', 'warn');
+            return;
+        }
+
+        for (let file of matches) {
+            await import(file);
+        }
+
+        const mainCommands: Dictionary<DiscordCommand> = Reflect.getMetadata(COMMAND_KEYS, Command);
+        const subCommands: Dictionary<Dictionary<DiscordCommand>> = Reflect.getMetadata(SUBCOMMANDS_LIST, Command);
+
+        if (!mainCommands) {
+            log('Something went wrong while loading commands.', 'Discord', 'err');
+            return;
+        }
+
+        for (let item of mainCommands) {
+            let id: string;
+            do { id = uuid() } while(this.commands.has(id));
+            item.value.aliases.forEach(cmd => {
+                this.commandsMapper[cmd] = id;
             });
 
-            if (process.env.DEBUG == 'true') this.on('debug', (m) => log(m, 'Discord', 'info'));
+            const sc = subCommands[item.value.aliases[0]]?.values() ?? [];
+            const dci = DiscordCommandInstance.create(item.value, ...sc);
 
-            this.on('ready', (c) => this.onReady(<DiscordBot>c));            
-            this.on('messageCreate', (m) => this.onMessageReceived(m));
-        });
+            if (!item.value.onlyOwner) {                
+                const slashCmd = new SlashCommandBuilder()
+                    .setName(item.value.aliases[0])
+                    .setDescription(item.value.description)
+                    .setDefaultMemberPermissions(PermissionFlagsBits[item.value.permission]);
+                
+                for (let arg of item.value.args) {
+                    arg.apply(slashCmd);
+                }
+                
+                // TODO: Verificar como fazer um comando padrão alem dos sub comandos
+                    
+                for (let subCmd of sc) {
+                    const slashSubCmd = new SlashCommandSubcommandBuilder()
+                        .setName(subCmd.aliases[0])
+                        .setDescription(subCmd.description);
+
+                    for (let arg of subCmd.args) {
+                        arg.apply(slashSubCmd);
+                    }
+
+                    slashCmd.addSubcommand(slashSubCmd);
+                }
+                
+                this.slashCommands.push(slashCmd);
+            }
+            
+            this.commands.set(id, dci);
+        }        
+        
+        log(`Loaded ${mainCommands.length()} commands!`, 'Discord', 'info');
+    }
+
+    private async loadEvents(): Promise<void> {
+        log('Loading events...', 'Discord', 'info');
+
+        const matches = await glob('events/**/*{.js,.ts}');
+
+        if (matches.length == 0) {
+            log('No events has been loaded!', 'Discord', 'warn');
+            return;
+        }
+
+        for (let file of matches) {
+            await import(file);
+        }
+
+        const events: Dictionary<DiscordEvent<any>[]> = Reflect.getMetadata(EVENTS_KEYS, Event);
+        if (!events) {
+            log('Something went wrong while loading events.', 'Discord', 'err');
+            return;
+        }
+
+        for (let key of events.keys()) {
+            for (let item of events.get(key)) {
+                this.on(key, item.execute);
+            }
+        }
+        
+        log(`Loaded ${events.length()} events!`, 'Discord', 'info');
+    }
+
+    public async reloadSlashCommands(guild?: Guild): Promise<any> {
+        const result: any = await this.rest.put(
+            Routes.applicationGuildCommands(this.application.id, guild.id),
+            { body: this.slashCommands.map(sc => sc.toJSON()) }
+        );
+        log(`Successfuly reloaded ${result.length} slash commands on ${guild.name}`, 'Discord', 'info');
     }
 
     public async connect(): Promise<string> {
@@ -97,7 +147,7 @@ export class DiscordBot extends Client {
     public getCommand(...args: string[]): DiscordCommandResult {
         const mainCmd = args.shift().toLowerCase();
         const id = this.commandsMapper[mainCmd];
-        if (!id) return null;
+        if (!id) return { command: null, args: args, parent: null };
         
         const instance = this.commands.get(id);
         let result: DiscordCommand = null;
@@ -109,60 +159,6 @@ export class DiscordBot extends Client {
 
         if (result == null) return { command: instance.main, args: args, parent: null };
         else return { command: result, args: args.slice(1), parent: instance.main };
-    }
-
-    private async onReady(bot: DiscordBot) {
-        await startActivityLoop(bot, null);
-    }
-
-    private async onMessageReceived(message: Message<boolean>) {
-        if (message.author.bot || message.channel.type === 'DM') return;
-
-        const prefixMention = new RegExp(`^<@!?${this.user.id}> `);
-        const prefix = message.content.match(prefixMention) ?
-            message.content.match(prefixMention)[0] :
-            process.env.PREFIX;
-
-        if (!message.content.startsWith(prefix)) return;
-
-        const args = getCommandArguments(message.content.slice(prefix.length).trim());
-        const result = this.getCommand(...args);
-        const command = result.command;
-
-        if (!command) return;
-
-        const isOwner = (message.author.id == message.guild.ownerId);
-        if (command.onlyOwner == true && !isOwner) {
-            await message.reply('Esse comando é restrito ao dono do server!');
-            return;
-        }
-
-        if (command.permission && !message.member.permissions.has(command.permission)) {
-            await message.reply('Você não possui permissões suficientes para executar esse comando!');
-            return;
-        }
-
-        if (command.requiredArgs > result.args.length) {
-            let reply = 'Esse comando requer argumentos!';
-            reply += `\nVocê providenciou apenas ${result.args.length} de ${command.requiredArgs} dos argumentos necessários.`;
-
-            if (command.usage.length > 0) {
-                reply += `\nO modo correto de usar esse comando seria:`;
-                for (let usage of command.usage) {
-                    if (result.parent == null) {
-                        reply += `\n   - \`${process.env.PREFIX}${command.aliases[0]} ${usage}\``;
-                    } else {
-                        reply += `\n   - \`${process.env.PREFIX}${result.parent.aliases[0]} ${command.aliases[0]} ${usage}\``;
-                    }                    
-                }
-            }
-
-            message.reply(reply);
-            return;
-        }
-
-        const cmdResult = await command.execute(new DiscordCommand.ExecuteArgs(message, result.args));
-        if (cmdResult && process.env.DEBUG == 'true') console.log(cmdResult);
     }
 
 }

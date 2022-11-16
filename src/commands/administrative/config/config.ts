@@ -1,6 +1,6 @@
 import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Command } from '@app/library/discord/discord-decorators';
-import { PermissionResolvable, Permissions } from 'discord.js';
+import { PermissionsString } from 'discord.js';
 import { ConfigSet } from './config-set';
 
 @Command({
@@ -13,11 +13,13 @@ export class Config implements DiscordCommand {
     public aliases: string[] = [ 'config' ];
     public usage: string[] = [ '', '<set|check>' ];
     public category: DiscordCommand.Category = DiscordCommand.Category.ADMINISTRATIVE;
-    public permission: PermissionResolvable = Permissions.FLAGS.MANAGE_GUILD;
+    public permission: PermissionsString = 'ManageGuild';
     public onlyOwner: boolean = false;
+    public defer: DiscordCommand.DeferType = DiscordCommand.DeferType.NO;
     public requiredArgs: number = 0;
+    public args: DiscordCommand.Argument[] = [];
 
-    public async execute(e: DiscordCommand.ExecuteArgs): Promise<any> {
+    public async execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any> {
         console.log('Only Config!');
     }
 

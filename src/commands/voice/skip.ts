@@ -1,13 +1,14 @@
 import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Command } from '@app/library/discord/discord-decorators';
+import { DiscordVoiceData } from '@app/library/discord/discord-voice';
 import { PermissionsString } from 'discord.js';
 
 @Command()
-export class Join implements DiscordCommand {
+export class Skip implements DiscordCommand {
 
-    public name: string = 'Join';
-    public description: string = 'Faz eu entrar em um chat de voz!';
-    public aliases: string[] = [ 'join', 'j' ];
+    public name: string = 'Skip';
+    public description: string = 'Pula a música que está tocando atuamente!';
+    public aliases: string[] = [ 'skip', 's' ];
     public usage: string[] = [ '' ];
     public category: DiscordCommand.Category = DiscordCommand.Category.VOICE;
     public permission: PermissionsString = null;
@@ -24,20 +25,19 @@ export class Join implements DiscordCommand {
             return;
         }
 
-        if (!channel.joinable) {
-            await e.reply('Desculpe, mas não consigo entrar no mesmo canal de voz que você!');
-            return;
-        }
+        let voice: DiscordVoiceData = null;
 
         try {
-            await e.getVoiceData(true);
+            voice = await e.getVoiceData();
         } catch (err: any) {
             await e.reply(err);
             return;
         }
 
+        await voice.playNext();
+
         if (e.isMessage()) await e.react('✅');
-        else if (e.isInteraction()) await e.reply('Estou me juntando com vocês!', false);
+        else if (e.isInteraction()) await e.reply('Pulando música atual!', false);        
     }
 
 }
