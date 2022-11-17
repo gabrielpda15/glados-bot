@@ -3,7 +3,7 @@ const tsConfigPaths = require('tsconfig-paths');
 const cleanup = tsConfigPaths.register({
     baseUrl: './',
     paths: {
-        '@app/*': [ './*' ]
+        '@app/*': [ './src/*' ]
     }
 });
 
