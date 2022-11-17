@@ -1,6 +1,7 @@
 import g from 'glob';
 import dotenv from 'dotenv';
 import { join, normalize, resolve } from 'path';
+import { existsSync, copyFileSync } from 'fs';
 import { Arguments } from '../types';
 
 const urlRegexNonHttp = /(https?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
@@ -101,30 +102,74 @@ function groupBy<T, V>(
     return result;
 }
 
-function log(message: string, source: string, severity: 'err' | 'info' | 'warn'): void {
+enum ConsoleFormats {
+    Reset = "\x1b[0m",
+    Bright = "\x1b[1m",
+    Dim = "\x1b[2m",
+    Underscore = "\x1b[4m",
+    Blink = "\x1b[5m",
+    Reverse = "\x1b[7m",
+    Hidden = "\x1b[8m",
+    
+
+    FgBlack = "\x1b[30m",
+    FgRed = "\x1b[31m",
+    FgGreen = "\x1b[32m",
+    FgYellow = "\x1b[33m",
+    FgBlue = "\x1b[34m",
+    FgMagenta = "\x1b[35m",
+    FgCyan = "\x1b[36m",
+    FgWhite = "\x1b[37m",
+    
+    BgBlack = "\x1b[40m",
+    BgRed = "\x1b[41m",
+    BgGreen = "\x1b[42m",
+    BgYellow = "\x1b[43m",
+    BgBlue = "\x1b[44m",
+    BgMagenta = "\x1b[45m",
+    BgCyan = "\x1b[46m",
+    BgWhite = "\x1b[47m"
+}
+
+type ConsoleSeverity = 'err' | 'info' | 'warn' | 'debug' | 'succ';
+
+function log(message: string, source: string, severity: ConsoleSeverity): void {
+    if (severity === 'debug' && process.env.DEBUG != 'true') return;
+
+    let severityString: string = severity == 'succ' ? 'info' : severity;
+    severityString = severity.padStart(5).toUpperCase();
+
     let result = `[${new Date().toLocaleString(process.env.LOCALE)}] `;
     result += `[${source}] `;
-    result += `${severity.padStart(5).toUpperCase()}: `;
+    result += `${severityString}: `;
     result += ` ${message}`;
 
-    switch (severity) {
-        case 'info':
-            console.log(result);
-            return;
-        case 'err':
-            console.error(result);
-            return;
-        case 'warn':
-            console.warn(result);
-            return;
-    }
+    let colors: { [ key: string ]: string } = {
+        'info': ConsoleFormats.FgWhite,
+        'succ': ConsoleFormats.FgGreen,
+        'warn': ConsoleFormats.FgYellow,
+        'err': ConsoleFormats.FgRed,
+        'debug': ConsoleFormats.Bright + ConsoleFormats.FgBlack
+    };
+
+    const color = colors[severity] + '%s' + ConsoleFormats.Reset;
+
+    console.log(color, result);   
 }
 
 function config(): Arguments {
+    const path = resolve(__dirname, '../../../');
+    if (!existsSync(resolve(path, '.env'))) {
+        log('No .env files were found! Creating one...', 'System', 'warn');
+        copyFileSync(resolve(path, '.default.env'), resolve(path, '.env'));
+        log('Please edit the .env with your own stuff!', 'System', 'warn');
+        return null;
+    }
+
     dotenv.config({ path: '.env' });
 
     const args = Arguments.create(process.argv.filter(x => x.startsWith('--')));    
-    return args;JSON.stringify
+    return args;
 }
 
 function queriefy(obj: {[key: string]: any}): string {

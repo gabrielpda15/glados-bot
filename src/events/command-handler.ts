@@ -3,8 +3,6 @@ import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Event } from '@app/library/discord/discord-decorators';
 import { DiscordEvent } from '@app/library/discord/discord-event';
 import { getCommandArguments, log } from '@app/library/utils';
-import { databaseService } from '@app/main';
-import { Config } from '@app/models/configuration/config';
 import { Message } from 'discord.js';
 
 @Event('messageCreate')
@@ -64,7 +62,7 @@ export class CommandHandler implements DiscordEvent<'messageCreate'> {
 
         try {
             const cmdResult = await command.execute(DiscordCommand.ExecuteArgs.create(message, result.args));
-            if (cmdResult && process.env.DEBUG == 'true') log(cmdResult, 'Discord', 'info');
+            if (cmdResult) log(cmdResult, 'Discord', 'debug');
         }
         catch (err) {
             await message.reply(`💥 😵‍💫 Alguma coisa explodiu do nosso lado! Vamos esperar que não aconteça de novo!`);

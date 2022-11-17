@@ -6,7 +6,7 @@ import { log } from '@app/library/utils';
 export class OnDebug implements DiscordEvent<'debug'> {
 
     public async execute(message: string): Promise<any> {
-        if (process.env.DEBUG == 'true') log(message, 'Discord', 'info')
+        log(message, 'Discord', 'debug');
     }
 
 }

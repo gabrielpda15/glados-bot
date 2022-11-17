@@ -52,8 +52,6 @@ export class Help implements DiscordCommand {
         const cmdResult = e.bot.getCommand(...e.args);
         const cmd = cmdResult.command;
 
-        console.log('here!');
-
         if (cmd == null) {
             // TODO: Melhorar implementação do similar
             const similar = findSimilarStrings(Object.keys(e.bot.commandsMapper), e.args[0], 3, false);

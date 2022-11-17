@@ -6,17 +6,30 @@ import { YoutubeService } from './library/youtube/youtube-service';
 
 export const args = config();
 
-export const databaseService = DatabaseService.create();
-export const youtubeService = YoutubeService.create();
-export const discordBot = DiscordBot.create();
+export var databaseService: DatabaseService;
+export var youtubeService: YoutubeService;
+export var discordBot: DiscordBot;
 
-const startTime = new Date();
-(async () => { 
+async function main(): Promise<any> {
+    if (!args) return;
+
+    databaseService = DatabaseService.create();
+    youtubeService = YoutubeService.create();
+    discordBot = DiscordBot.create();
+    
     await databaseService.initialize();
     await youtubeService.initialize('youtube.com_cookies.txt');
     await discordBot.initialize();
 
     await discordBot.connect();
-})()
-.catch(err => console.error(err))
-.then(() => log(`Done! ${(new Date().getTime() - startTime.getTime())}ms`, 'System', 'info'));
+}
+
+(async () => { 
+    try {
+        const startTime = new Date();
+        await main();
+        log(`Done! ${(new Date().getTime() - startTime.getTime())}ms`, 'System', 'succ');
+    } catch (err: any) {
+        log(err, 'System', 'err');
+    }
+})();

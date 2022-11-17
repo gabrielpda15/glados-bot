@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
+import { log } from '../utils';
 
 export type Cookie = {
     domain: string;
@@ -24,7 +25,11 @@ export class YoutubeCookie {
 
         path = resolve(__dirname, path);
 
-        if (!existsSync(path)) throw `File at '${path}' does not exist!`;
+        if (!existsSync(path)) {
+            writeFileSync(path, '', { encoding: 'utf8' });
+            log('Created youtube cookies file, please replace it with your own!', 'Youtube', 'warn');
+            return;
+        }
 
         const content: string = readFileSync(path, { encoding: 'utf8' });
         const lines = content.match(/^[^#\s](.*)$/gm);

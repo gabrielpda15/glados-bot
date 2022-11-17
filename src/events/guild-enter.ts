@@ -1,7 +1,6 @@
 import { DiscordBot } from '@app/library/discord/discord-bot';
 import { Event } from '@app/library/discord/discord-decorators';
 import { DiscordEvent } from '@app/library/discord/discord-event';
-import { log } from '@app/library/utils';
 import { Guild } from 'discord.js';
 
 @Event('guildCreate')

@@ -30,7 +30,7 @@ export class OnInteractionCreate implements DiscordEvent<'interactionCreate'> {
 
         try {
             const cmdResult = await command.execute(DiscordCommand.ExecuteArgs.create(interaction, args));
-            if (cmdResult && process.env.DEBUG == 'true') log(cmdResult, 'Discord', 'info');
+            if (cmdResult) log(cmdResult, 'Discord', 'debug');
         } catch (err) {
             const errorMsg = `💥 😵‍💫 Alguma coisa explodiu do nosso lado! Vamos esperar que não aconteça de novo!`;
             if (interaction.deferred || interaction.replied) {

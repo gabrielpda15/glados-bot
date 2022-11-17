@@ -149,7 +149,7 @@ export class YoutubeService {
     
             resource.volume.setVolume(YoutubeService.INITIAL_VOLUME * (volume / 100));
     
-            log(`Retrieving youtube stream for id: ${ytdl.getVideoID(url)}`, 'Youtube', 'info');
+            log(`Retrieving youtube stream for id: ${ytdl.getVideoID(url)}`, 'Youtube', 'debug');
     
             return resource;
         } catch (err) {
