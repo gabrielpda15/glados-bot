@@ -75,9 +75,9 @@ export class Queue implements DiscordCommand {
         if (isMultiPage) pages.push(desc);
 
         const embed = createEmbed('Lista de músicas', isMultiPage ? pages[0] : desc);
-        const rowBuilder = new ActionRowBuilder().addComponents(forwardButton);
+        const rowBuilder = new ActionRowBuilder<ButtonBuilder>().addComponents(forwardButton);
 
-        const components: any = isMultiPage ? [ rowBuilder.data ] : [];       
+        const components = isMultiPage ? [ rowBuilder ] : [];
 
         let embedMessage: Message<boolean>;
 
@@ -99,12 +99,12 @@ export class Queue implements DiscordCommand {
         collector.on('collect', async (interaction) => {
             interaction.customId === 'back' ? currentIndex-- : currentIndex++
             embed.setDescription(pages[currentIndex]);
-            const row: any = new ActionRowBuilder();
+            const row = new ActionRowBuilder<ButtonBuilder>();
             if (currentIndex > 0) row.addComponents(backButton);
             if (currentIndex < pages.length - 1) row.addComponents(forwardButton);            
             await interaction.update({
                 embeds: [ embed.data ],
-                components: [ row.data ]
+                components: [ row ]
             });
         });
     }

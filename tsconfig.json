@@ -6,7 +6,7 @@
       "@app/*": [ "./src/*" ]
     },
     "lib": [ "ES5", "ES6" ],
-    "outDir": "build",
+    "outDir": "build/src",
     "target": "ES2021",
     "module": "CommonJS",
     "moduleResolution": "node",
