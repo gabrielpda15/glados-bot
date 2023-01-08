@@ -219,13 +219,6 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.5.tgz#1001cc5e6a3704b83c236027e77f2f58ea010f40"
   integrity sha512-Klz949h02Gz2uZCMGwDUSDS1YBlTdDDgbWHi+81l29tQALUtvz4rAYi5uoVhE5Lagoq6DeqAUlbrHvW/mXDgdQ==
 
-"@types/node-microphone@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@types/node-microphone/-/node-microphone-0.1.1.tgz#2d6c6bab1bc2f291033d9311b34de57b337b69aa"
-  integrity sha512-SjkxMf0dcxIDgYua8zgrBHyWHKBWqhtykyJqDFQH12PrS0B+c1dGZVryXq+u3Xl+ZtM9O3Zb9bOEEwX8kKOh0w==
-  dependencies:
-    "@types/node" "*"
-
 "@types/node@*":
   version "17.0.13"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.13.tgz#5ed7ed7c662948335fcad6c412bb42d99ea754e3"
@@ -1444,11 +1437,6 @@ node-gyp@8.x:
     semver "^7.3.5"
     tar "^6.1.2"
     which "^2.0.2"
-
-node-microphone@^0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/node-microphone/-/node-microphone-0.1.5.tgz#0ecf6d600be7df78eb5cad6987f04b8dd14640de"
-  integrity sha512-pfInNR0QGt+keErJrX6hQP1BMQMZQno791Xugjgf0crRi6QEMSjNf7Wo16qK0u5zwAozE7X05twmy5fte00TyA==
 
 nodemon@^2.0.20:
   version "2.0.20"

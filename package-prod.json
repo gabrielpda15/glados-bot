@@ -23,7 +23,6 @@
     "glob": "^8.0.3",
     "mysql": "^2.18.1",
     "naudiodon": "^2.3.6",
-    "node-microphone": "^0.1.5",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.1.2",
     "tsconfig-paths": "^4.1.0",
