@@ -3,11 +3,15 @@ import { config, log } from './library/utils';
 import { DiscordBot } from './library/discord/discord-bot';
 import { DatabaseService } from './library/typeorm/database-service';
 import { YoutubeService } from './library/youtube/youtube-service';
+import { RadioService } from './library/voice/radio.service';
+import { HostAudioService } from './library/voice/host-audio.service';
 
 export const args = config();
 
 export var databaseService: DatabaseService;
 export var youtubeService: YoutubeService;
+export var radioService: RadioService;
+export var hostAudioService: HostAudioService;
 export var discordBot: DiscordBot;
 
 async function main(): Promise<any> {
@@ -15,10 +19,14 @@ async function main(): Promise<any> {
 
     databaseService = DatabaseService.create();
     youtubeService = YoutubeService.create();
+    radioService = RadioService.create();
+    hostAudioService = HostAudioService.create();    
     discordBot = DiscordBot.create();
     
     await databaseService.initialize();
     await youtubeService.initialize('youtube.com_cookies.txt');
+    await radioService.initialize();
+    await hostAudioService.initialize();
     await discordBot.initialize();
 
     await discordBot.connect();

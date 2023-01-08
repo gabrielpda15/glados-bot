@@ -37,7 +37,7 @@ export class Volume implements DiscordCommand {
         let voice: DiscordVoiceData = null;
 
         try {
-            voice = await e.getVoiceData(true);
+            voice = await e.getVoiceData();
         } catch (err: any) {
             await e.reply(err);
             return;

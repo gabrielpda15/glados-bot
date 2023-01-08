@@ -74,14 +74,25 @@ export class Play implements DiscordCommand {
                 return;
             }
         } else {
-            await e.reply('Ainda não tenho suporte para pesquisas por nome, utilize uma URL no lugar!');
-            return;
+            const videoResult = await youtubeService.searchVideo(e.args[0], 1);
+            const videoInfo = await youtubeService.getVideoInfo(`https://www.youtube.com/watch?v=${videoResult.items[0].id}`);
+            if (videoInfo == null) {
+                await e.reply('Ocorreu um erro ao tentar acessar essa música, ela pode possuir alguma restrição de região ou idade!');
+                return;
+            }
+
+            const track = VoiceTrack.fromYoutubeVideo(videoInfo);
+            track.requestedBy = e.input.member.user.id;
+
+            embed = await track.toEmbed('🎶 Música Adicionada');
+            tracks.push(track);
         }
 
         let voice: DiscordVoiceData = null;
 
         try {
             voice = await e.getVoiceData(true);
+            if (!voice.ensureType('youtube')) throw 'Desculpe, mas já estou tocando outra coisa no momento!';
         } catch (err: any) {
             await e.reply(err);
             return;

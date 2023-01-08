@@ -180,12 +180,13 @@ export namespace DiscordCommand {
                 voice.connection.subscribe(voice.player);
                 voice.connection.on('stateChange', async (o, n) => { 
                     if (n.status == 'disconnected') {
+                        await voice.dispose();
                         voice.connection.destroy();
                         this.bot.cache.voice.delete(voiceChannel.guildId);
                     }
                 });
                 voice.player.on('stateChange', async (o, n) => {
-                    if (n.status == 'idle') {
+                    if (n.status == 'idle' && voice.getType() == 'youtube') {
                         await voice.playNext();
                     }
                 });

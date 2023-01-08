@@ -1,8 +1,9 @@
-import { AudioResource, createAudioResource, StreamType } from '@discordjs/voice';
-import ytdl from 'ytdl-core';
 import ytpl from 'ytpl';
-import { log } from '../utils';
+import ytdl from 'ytdl-core';
+import ytnode from 'youtube-node';
+import { AudioResource, createAudioResource, StreamType } from '@discordjs/voice';
 import { YoutubeCookie } from './youtube-cookie';
+import { log } from '../utils';
 
 export class YoutubeVideo {
 
@@ -38,12 +39,37 @@ export enum YoutubeUrlType {
     Both = Video | Playlist
 }
 
+export interface YouTubeVideoData {
+    id: string;
+    title: string;
+    channel: {
+        id: string;
+        title: string;
+    };
+    thumbnails: string;
+    publishedAt: Date;
+}
+
+export interface YouTubeSearchResult {
+    totalResults: number;
+    resultsPerPage: number;
+    nextPageToken: string;
+    items: YouTubeVideoData[];   
+};
+
+type YouTubeSearchFunc = (query: string, limit: number, callback: (error: Error, result: any) => void) => void;
+
 export class YoutubeService {
 
     private static readonly INITIAL_VOLUME: number = 0.1;
     private cookie: YoutubeCookie;
 
-    private constructor() { }
+    private service: ytnode.YouTube;
+
+    private constructor() { 
+        this.service = new (<any>ytnode)();
+        this.service.setKey(process.env.YOUTUBE_API_KEY);
+    }
 
     public static create(): YoutubeService {
         return new YoutubeService();
@@ -97,6 +123,29 @@ export class YoutubeService {
             log(<any>err, 'Youtube', 'err');
             return null;
         }        
+    }
+
+    public async searchVideo(query: string, limit: number = 1): Promise<YouTubeSearchResult> {
+        return new Promise((res, rej) => {
+            (<YouTubeSearchFunc>this.service.search)(query, limit, (err, result) => {
+                if (err) rej(err);
+                res({
+                    totalResults: result?.pageInfo?.totalResults,
+                    resultsPerPage: result?.pageInfo?.resultsPerPage,
+                    nextPageToken: result?.nextPageToken,
+                    items: result?.items?.map((x: any) => ({
+                        id: x?.id?.videoId,
+                        title: x?.snippet?.title,
+                        channel: {
+                            id: x?.snippet?.channelId,
+                            title: x?.snippet?.channelTitle,
+                        },
+                        thumbnails: x?.snippet?.thumbnails?.high?.url,
+                        publishedAt: new Date(x?.snippet?.publishedAt)
+                    }))
+                });
+            });
+        });
     }
 
     public async getPlaylistInfo(url: string, limit?: number): Promise<YoutubePlaylist> {

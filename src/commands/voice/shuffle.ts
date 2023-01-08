@@ -35,6 +35,11 @@ export class Shuffle implements DiscordCommand {
             return;
         }
 
+        if (voice.queue.length == 0) {
+            await e.reply('Desculpe, mas a lista de músicas do servidor está vazia!');
+            return;
+        }
+
         let queue = voice.queue.slice(0);
         const curTrack = queue.shift();
         queue = shuffleArray(queue);

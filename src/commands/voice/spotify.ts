@@ -1,18 +1,21 @@
 import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Command } from '@app/library/discord/discord-decorators';
 import { DiscordVoiceData } from '@app/library/discord/discord-voice';
+import { createEmbed } from '@app/library/utils';
+import { RadioService } from '@app/library/voice/radio.service';
+import { hostAudioService } from '@app/main';
 import { PermissionsString } from 'discord.js';
 
 @Command()
-export class Skip implements DiscordCommand {
+export class Spotify implements DiscordCommand {
 
-    public name: string = 'Skip';
-    public description: string = 'Pula a música que está tocando atuamente!';
-    public aliases: string[] = [ 'skip', 's' ];
+    public name: string = 'Spotify';
+    public description: string = 'Faz eu entrar em um chat de voz para tocar Spotify!';
+    public aliases: string[] = [ 'spotify' ];
     public usage: string[] = [ '' ];
     public category: DiscordCommand.Category = DiscordCommand.Category.VOICE;
     public permission: PermissionsString = null;
-    public onlyOwner: boolean = false;
+    public onlyOwner: boolean = true;
     public defer: DiscordCommand.DeferType = DiscordCommand.DeferType.NO;
     public requiredArgs: number = 0;
     public args: DiscordCommand.Argument[] = [];
@@ -25,24 +28,26 @@ export class Skip implements DiscordCommand {
             return;
         }
 
-        let voice: DiscordVoiceData = null;
+        if (!channel.joinable) {
+            await e.reply('Desculpe, mas não consigo entrar no mesmo canal de voz que você!');
+            return;
+        }
+
+        let voice: DiscordVoiceData = null;       
 
         try {
-            voice = await e.getVoiceData();
+            voice = await e.getVoiceData(true);
+            if (!voice.ensureType('host_audio')) throw 'Desculpe, mas já estou tocando outra coisa no momento!';
         } catch (err: any) {
             await e.reply(err);
             return;
         }
 
-        if (voice.queue.length == 0) {
-            await e.reply('Desculpe, mas a lista de músicas do servidor está vazia!');
-            return;
-        }
+        await voice.playHostAudio();
 
-        await voice.playNext();
+        const embed = createEmbed('🎶 Tocando Spotify');
 
-        if (e.isMessage()) await e.react('✅');
-        else if (e.isInteraction()) await e.reply('Pulando música atual!', false);        
+        await e.reply([embed.data], false);
     }
 
 }

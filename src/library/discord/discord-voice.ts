@@ -1,4 +1,4 @@
-import { discordBot, youtubeService } from "@app/main";
+import { discordBot, hostAudioService, radioService, youtubeService } from "@app/main";
 import { AudioPlayer, createAudioPlayer, joinVoiceChannel, VoiceConnection } from "@discordjs/voice";
 import { APIEmbed, Snowflake, TextChannel, VoiceChannel } from "discord.js";
 import { createEmbed, log } from "../utils";
@@ -71,6 +71,8 @@ export type VoiceQueue = VoiceTrack[];
 export type VoiceQueueLoopType = 'all' | 'one' | 'none'
 
 export class DiscordVoiceData {
+    
+    private type: 'none' | 'youtube' | 'radio' | 'host_audio';
 
     public readonly connection: VoiceConnection;
     public readonly player: AudioPlayer;
@@ -93,13 +95,66 @@ export class DiscordVoiceData {
         });
         this.player = createAudioPlayer();
         this.isPlaying = false;
+        this.type = 'none';
         this.volume = 100;
         this.queue = [];
         this.loop = 'none';
     }
 
+    public getType(): 'none' | 'youtube' | 'radio' | 'host_audio' { return this.type; }
+
+    public ensureType(type: 'youtube' | 'radio' | 'host_audio'): boolean {
+        if (this.type == type) return true;
+        if (this.type == 'none') { 
+            this.type = type;
+            return true;
+        }
+
+        return false;
+    }
+
+    public async dispose(): Promise<void> {
+        if (this.type == 'host_audio') {
+            await hostAudioService.disposeStream();
+        }
+    }
+
+    public async playRadio(radio: string): Promise<void> {
+        try {
+            if (this.type !== 'radio') throw 'The current discord voice is not set to be radio type';
+
+            if (!this.isPlaying) this.isPlaying = true;
+
+            const stream = await radioService.getStream(<any>radio, this.volume);
+            if (!stream) throw 'Radio stream returned null';
+            this.player.play(stream);
+        } catch (err) {
+            log('Something went wrong trying to play the radio!', 'Discord', 'err');
+            if (err) log(<any>err, 'Discord', 'err');
+            await this.textChannel.send('Deu algo errado ao tentar reproduzir a sua radio!');
+        }
+    }
+
+    public async playHostAudio(): Promise<void> {
+        try {
+            if (this.type !== 'host_audio') throw 'The current discord voice is not set to be host_audio type';
+            if (this.isPlaying) throw 'I\'m already playing the host audio!'
+            this.isPlaying = true;
+
+            const stream = hostAudioService.getStream();
+            if (!stream) throw 'Host audio stream returned null';
+            this.player.play(stream);
+        } catch (err) {
+            log('Something went wrong trying to play the host audio!', 'Discord', 'err');
+            if (err) log(<any>err, 'Discord', 'err');
+            await this.textChannel.send('Deu algo errado ao tentar reproduzir a música local!');
+        }
+    }
+
     public async playNext(): Promise<void> {
         try {
+            if (this.type !== 'youtube') throw 'The current discord voice is not set to be youtube type';
+
             if (this.queue.length == 0) {
                 if (this.isPlaying) this.connection.disconnect();
                 return;
@@ -117,7 +172,7 @@ export class DiscordVoiceData {
                 }
     
                 const stream = await youtubeService.getStream(this.queue[0].url, this.volume);
-                if (!stream) throw null;
+                if (!stream) throw 'Youtube stream returned null';
                 this.player.play(stream);
             }
         } catch (err) {
