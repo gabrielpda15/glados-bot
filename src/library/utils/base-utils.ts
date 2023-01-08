@@ -168,7 +168,7 @@ function config(): Arguments {
 
     dotenv.config({ path: '.env' });
 
-    const args = Arguments.create(process.argv.filter(x => x.startsWith('--')));    
+    const args = Arguments.create(process.argv);    
     return args;
 }
 

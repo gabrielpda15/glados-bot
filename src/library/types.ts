@@ -74,11 +74,7 @@ export type Dictionary<T> = { [key: string]: T } & Dictionary.DictionaryIterator
 export namespace Arguments {
 
     export function create(e: string[]): Arguments {
-        const args = new ArgumentsUtils(e) as any;
-        e.forEach((v, i) => {
-            args[i] = v;
-        });
-        return args;
+        return new ArgumentsUtils(e) as any;
     }
 
     export class ArgumentsUtils {
@@ -86,12 +82,14 @@ export namespace Arguments {
         private dictionary: Dictionary<boolean | string>;
 
         constructor(e: string[]) {
-            const dict = Dictionary.create<boolean | string>();     
+            const dict = Dictionary.create<boolean | string>();
             for (let i = 0; i < e.length; i++) {
-                if (i + 1 < e.length && e[i + 1].startsWith('--') === false) {
-                    dict.set(e[i], e[i + 1]);
-                } else {
-                    dict.set(e[i], true);
+                if (e[i].startsWith('--') || e[i].startsWith('-')) {
+                    if (i + 1 < e.length && e[i + 1].startsWith('--') === false) {
+                        dict.set(e[i], e[++i]);
+                    } else {
+                        dict.set(e[i], true);
+                    }
                 }
             }
             this.dictionary = dict;
