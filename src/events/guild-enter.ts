@@ -5,10 +5,8 @@ import { Guild } from 'discord.js';
 
 @Event('guildCreate')
 export class OnGuildCreate implements DiscordEvent<'guildCreate'> {
-
-    public async execute(guild: Guild): Promise<any> {
-        const bot = <DiscordBot>guild.client;        
-        await bot.reloadSlashCommands(guild);
-    }    
-
+	public async execute(guild: Guild): Promise<any> {
+		const bot = <DiscordBot>guild.client;
+		await bot.reloadSlashCommands(guild);
+	}
 }

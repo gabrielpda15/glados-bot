@@ -2,17 +2,15 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 
 @Entity({ name: 'cfgActivity' })
 export class Activity {
+	@PrimaryGeneratedColumn('uuid')
+	public id: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    public id: string;
+	@CreateDateColumn()
+	public createdAt: Date;
 
-    @CreateDateColumn()
-    public createdAt: Date;
+	@UpdateDateColumn()
+	public updatedAt: Date;
 
-    @UpdateDateColumn()
-    public updatedAt: Date;
-
-    @Column({ length: 80, unique: false, nullable: false })
-    public description: string;
-
+	@Column({ length: 80, unique: false, nullable: false })
+	public description: string;
 }

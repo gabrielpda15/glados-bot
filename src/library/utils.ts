@@ -3,9 +3,9 @@ import discord from './utils/discord-utils';
 import commands from './utils/command-utils';
 
 const utilsModule = {
-    ...base,
-    ...discord,
-    ...commands
+	...base,
+	...discord,
+	...commands,
 };
 
 export = utilsModule;

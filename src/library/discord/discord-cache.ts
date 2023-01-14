@@ -5,11 +5,9 @@ import { DiscordVoiceData } from './discord-voice';
 export type VoiceCache = Map<Snowflake, DiscordVoiceData>;
 
 export class DiscordCache {
+	public voice: VoiceCache;
 
-    public voice: VoiceCache;
-
-    constructor() {
-        this.voice = new Map<Snowflake, DiscordVoiceData>();
-    }
-
+	constructor() {
+		this.voice = new Map<Snowflake, DiscordVoiceData>();
+	}
 }

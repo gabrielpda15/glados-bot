@@ -1,7 +1,7 @@
 const { resolve } = require('path');
 const { copyFileSync } = require('fs');
 
-const filesToCopy = [ 
+const filesToCopy = [
     { from: '.env.prod', to: '.env' },
     { from: 'bootstrap.js', to: 'bootstrap.js' },
     { from: 'package-prod.json', to: 'package.json' }

@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class radio1671285102574 implements MigrationInterface {
-    name = 'radio1671285102574'
+	name = 'radio1671285102574';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+	public async up(queryRunner: QueryRunner): Promise<void> {
+		await queryRunner.query(`
             CREATE TABLE \`cfgRadio\` (
                 \`id\` varchar(36) NOT NULL,
                 \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -16,15 +16,14 @@ export class radio1671285102574 implements MigrationInterface {
                 PRIMARY KEY (\`id\`)
             ) ENGINE = InnoDB
         `);
-    }
+	}
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+	public async down(queryRunner: QueryRunner): Promise<void> {
+		await queryRunner.query(`
             DROP INDEX \`IDX_476ab2cd22e6834af96e04b670\` ON \`cfgRadio\`
         `);
-        await queryRunner.query(`
+		await queryRunner.query(`
             DROP TABLE \`cfgRadio\`
         `);
-    }
-
+	}
 }

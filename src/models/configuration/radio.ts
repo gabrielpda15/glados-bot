@@ -2,23 +2,21 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 
 @Entity({ name: 'cfgRadio' })
 export class Radio {
+	@PrimaryGeneratedColumn('uuid')
+	public id: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    public id: string;
+	@CreateDateColumn()
+	public createdAt: Date;
 
-    @CreateDateColumn()
-    public createdAt: Date;
+	@UpdateDateColumn()
+	public updatedAt: Date;
 
-    @UpdateDateColumn()
-    public updatedAt: Date;
+	@Column({ length: 32, nullable: false, unique: true })
+	public key: string;
 
-    @Column({ length: 32, nullable: false, unique: true })
-    public key: string;
+	@Column({ length: 128, nullable: false })
+	public name: string;
 
-    @Column({ length: 128, nullable: false})
-    public name: string;
-
-    @Column({ length: 512, nullable: false, unique: false })
-    public url: string;
-
+	@Column({ length: 512, nullable: false, unique: false })
+	public url: string;
 }
