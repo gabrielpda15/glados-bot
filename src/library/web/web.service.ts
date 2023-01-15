@@ -20,7 +20,7 @@ export class WebService {
 	}
 
 	public start(): void {
-		this.app.listen(8888);
+		this.app.listen(process.env.PORT ?? 8888);
 	}
 
 	private initializeRouting() {
