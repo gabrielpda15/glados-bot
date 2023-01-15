@@ -1,5 +1,6 @@
 import { youtubeService } from '@app/main';
-import { createAudioResource, StreamType } from '@discordjs/voice';
+import { AudioResource, createAudioResource, StreamType } from '@discordjs/voice';
+import { VoiceTrack } from '../discord/discord-voice';
 import { SpotifyApiHandler } from './spotify-api-handler';
 import { SpotifyAuthHandler } from './spotify-auth-handler';
 
@@ -9,6 +10,22 @@ export enum SpotifyUrlType {
 	Unknown = 0,
 	Track = 1 << 0,
 	Playlist = 1 << 1,
+}
+
+export interface SpotifyTrack {
+	id: string;
+	title: string;
+	length: number;
+	url: string;
+	artist: { name: string; url: string };
+}
+
+export interface SpotifyPlaylist {
+	id: string;
+	title: string;
+	length: number;
+	url: string;
+	items: SpotifyTrack[];
 }
 
 export class SpotifyService {
@@ -45,7 +62,12 @@ export class SpotifyService {
 		return match[3];
 	}
 
-	public async getStream() {
-		// youtubeService.searchVideo()
+	public async getStream(track: VoiceTrack, volume: number = 100): Promise<AudioResource> {
+		const search = track.title + ' - ' + track.artist;
+		const videoResult = await youtubeService.searchVideo(search, 1);
+		const videoId = videoResult.items[0].id;
+		const youtubeTrack = new VoiceTrack();
+		youtubeTrack.url = `https://www.youtube.com/watch?v=${videoResult.items[0].id}`;
+		return await youtubeService.getStream(youtubeTrack, volume);
 	}
 }

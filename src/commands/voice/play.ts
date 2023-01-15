@@ -1,11 +1,12 @@
+import { APIEmbed, PermissionsString } from 'discord.js';
+import { spotifyService, youtubeService } from '@app/main';
 import { DiscordCommand } from '@app/library/discord/discord-command';
 import { Command } from '@app/library/discord/discord-decorators';
 import { DiscordVoiceData, VoicePlaylist, VoiceTrack } from '@app/library/discord/discord-voice';
 import { SpotifyUrlType } from '@app/library/spotify/spotify.service';
-import { containsUrl, createEmbed, isValidUrl, log } from '@app/library/utils';
 import { YoutubeUrlType } from '@app/library/youtube/youtube-service';
-import { spotifyService, youtubeService } from '@app/main';
-import { APIEmbed, PermissionsString } from 'discord.js';
+import { createEmbed, log } from '@app/library/utils';
+import { DiscordBot } from '@app/library/discord/discord-bot';
 
 type PlayFuncResult = {
 	embed?: APIEmbed;
@@ -46,7 +47,8 @@ export class Play implements DiscordCommand {
 
 		const spotifyTypeToFunc = {
 			[SpotifyUrlType.Track]: async () => await this.playSpotifyTrack(e.args[0], e.input.member.user.id),
-			[SpotifyUrlType.Playlist]: async () => await this.playSpotifyPlaylist(e.args[0], e.input.member.user.id),
+			[SpotifyUrlType.Playlist]: async () =>
+				await this.playSpotifyPlaylist(e.args[0], e.input.member.user.id, e.bot),
 			[SpotifyUrlType.Unknown]: async () => await this.playFromSearch(e.args.join(' '), e.input.member.user.id),
 		};
 
@@ -64,9 +66,6 @@ export class Play implements DiscordCommand {
 			return;
 		}
 
-		const tracks: VoiceTrack[] = funcResult.tracks;
-		const embed: APIEmbed = funcResult.embed;
-
 		let voice: DiscordVoiceData = null;
 
 		try {
@@ -77,10 +76,10 @@ export class Play implements DiscordCommand {
 			return;
 		}
 
-		voice.queue.push(...tracks);
+		voice.queue.push(...funcResult.tracks);
 		if (!voice.isPlaying) await voice.playNext();
 
-		await e.reply([embed], false);
+		await e.reply([funcResult.embed], false);
 	}
 
 	private async playFromSearch(arg: string, user: string): Promise<PlayFuncResult> {
@@ -89,14 +88,14 @@ export class Play implements DiscordCommand {
 			const videoInfo = await youtubeService.getVideoInfo(
 				`https://www.youtube.com/watch?v=${videoResult.items[0].id}`
 			);
+
 			if (!videoInfo) {
 				return {
 					error: 'Ocorreu um erro ao tentar acessar essa música, ela pode possuir alguma restrição de região ou idade!',
 				};
 			}
 
-			const track = VoiceTrack.fromYoutubeVideo(videoInfo);
-			track.requestedBy = user;
+			const track = VoiceTrack.fromYoutubeVideo(videoInfo, user);
 
 			return {
 				embed: await track.toEmbed('🎶 Música Adicionada'),
@@ -119,8 +118,7 @@ export class Play implements DiscordCommand {
 				};
 			}
 
-			const track = VoiceTrack.fromYoutubeVideo(videoInfo);
-			track.requestedBy = user;
+			const track = VoiceTrack.fromYoutubeVideo(videoInfo, user);
 
 			return {
 				embed: await track.toEmbed('🎶 Música Adicionada'),
@@ -142,41 +140,45 @@ export class Play implements DiscordCommand {
 			};
 		}
 
-		const playlist = VoicePlaylist.fromYoutubePlaylist(playlistInfo);
-		playlist.requestedBy = user;
+		const playlist = VoicePlaylist.fromYoutubePlaylist(playlistInfo, user);
 
 		return {
 			embed: await playlist.toEmbed('🎶 Playlist Adicionada'),
-			tracks: playlist.items.map((video) => {
-				const temp = VoiceTrack.fromYoutubeVideo(video);
-				temp.requestedBy = user;
-				return temp;
-			}),
+			tracks: playlist.items,
 		};
 	}
 
 	private async playSpotifyTrack(arg: string, user: string): Promise<PlayFuncResult> {
-		const auth = await spotifyService.auth.getAuthorization();
-		const id = spotifyService.getIdFromUrl(arg);
-		const result = await spotifyService.api.getTrack({ trackId: id, authorization: auth });
+		const authorization = await spotifyService.auth.getAuthorization();
+		const trackId = spotifyService.getIdFromUrl(arg);
+		if (!trackId) {
+			return { error: 'Não consigui encontrar essa música no Spotify!' };
+		}
+
+		const result = await spotifyService.api.getTrack({ trackId, authorization });
 
 		if (!result) {
 			return { error: 'Não consigui encontrar essa música no Spotify!' };
 		}
 
-		const artist = result['artists']?.[0]?.['name'];
-		const track = result['name'];
-
-		if (!artist || !track) {
-			return { error: 'Desculpe, mas tem algo errado com essa música!' };
-		}
-
-		const youtubeSearch = artist + ' - ' + track;
+		const youtubeSearch = result.artist.name + ' - ' + result.title;
 
 		return await this.playFromSearch(youtubeSearch, user);
 	}
 
-	private async playSpotifyPlaylist(arg: string, user: string): Promise<PlayFuncResult> {
-		return { error: 'Playlists do Spotify ainda não é suportado!' };
+	private async playSpotifyPlaylist(arg: string, user: string, bot: DiscordBot): Promise<PlayFuncResult> {
+		const authorization = await spotifyService.auth.getAuthorization();
+		const playlistId = spotifyService.getIdFromUrl(arg);
+		if (!playlistId) {
+			return { error: 'Não consigui encontrar essa playlist no Spotify!' };
+		}
+
+		const spotifyPlaylist = await spotifyService.api.getPlaylist({ playlistId, authorization });
+		const playlist = VoicePlaylist.fromSpotifyPlaylist(spotifyPlaylist, user);
+
+		return { 
+			embed: await playlist.toEmbed('🎶 Playlist Adicionada'), 
+			tracks: playlist.items
+		};
 	}
 }

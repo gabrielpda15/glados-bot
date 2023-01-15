@@ -4,28 +4,22 @@ import ytnode from 'youtube-node';
 import { AudioResource, createAudioResource, StreamType } from '@discordjs/voice';
 import { YoutubeCookie } from './youtube-cookie';
 import { log } from '../utils';
+import { VoiceTrack } from '../discord/discord-voice';
 
-export class YoutubeVideo {
-	public id: string;
-	public title: string;
-	public length: number;
-	public url: string;
-	public channel: { name: string; url: string };
-
-	public toString(): string {
-		const min = Math.floor(this.length / 60);
-		const sec = this.length - min * 60;
-		const time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-		return `[${this.title}](${this.url}) \`${time}\``;
-	}
+export interface YoutubeVideo {
+	id: string;
+	title: string;
+	length: number;
+	url: string;
+	channel: { name: string; url: string };
 }
 
-export class YoutubePlaylist {
-	public id: string;
-	public title: string;
-	public length: number;
-	public url: string;
-	public items: YoutubeVideo[];
+export interface YoutubePlaylist {
+	id: string;
+	title: string;
+	length: number;
+	url: string;
+	items: YoutubeVideo[];
 }
 
 export enum YoutubeUrlType {
@@ -179,10 +173,10 @@ export class YoutubeService {
 		}
 	}
 
-	public async getStream(url: string, volume: number = 100): Promise<AudioResource> {
+	public async getStream(track: VoiceTrack, volume: number = 100): Promise<AudioResource> {
 		try {
 			const resource = createAudioResource(
-				ytdl(url, {
+				ytdl(track.url, {
 					filter: 'audioonly',
 					quality: 'highestaudio',
 					highWaterMark: 1 << 25,
@@ -196,7 +190,7 @@ export class YoutubeService {
 
 			resource.volume.setVolume(YoutubeService.INITIAL_VOLUME * (volume / 100));
 
-			log(`Retrieving youtube stream for id: ${ytdl.getVideoID(url)}`, 'Youtube', 'debug');
+			log(`Retrieving youtube stream for id: ${ytdl.getVideoID(track.url)}`, 'Youtube', 'debug');
 
 			return resource;
 		} catch (err) {

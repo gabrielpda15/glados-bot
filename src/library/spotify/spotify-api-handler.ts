@@ -1,9 +1,76 @@
 import { request, RequestOptions } from 'https';
+import { queriefy } from '../utils';
 import { SpotifyLogin } from './spotify-login';
+import { SpotifyPlaylist, SpotifyTrack } from './spotify.service';
 
 export class SpotifyApiHandler {
-	public async getTrack({ trackId, authorization }: { trackId: string; authorization: SpotifyLogin }) {
-		return await this.api({ path: '/tracks/' + trackId, method: 'GET', authorization });
+	public async getTrack({ trackId, authorization }: { trackId: string; authorization: SpotifyLogin }): Promise<SpotifyTrack> {
+		const result = await this.api({ path: `/tracks/${trackId}`, method: 'GET', authorization });
+		return {
+			id: trackId,
+			title: '',
+			length: 0,
+			url: `https://open.spotify.com/track/${trackId}`,
+			artist: {
+				name: '',
+				url: ''
+			}
+		}
+	}
+
+	public async getPlaylist({ playlistId, authorization }: { playlistId: string; authorization: SpotifyLogin }): Promise<SpotifyPlaylist> {
+		return await this.recurssiveGetPlaylist({
+			playlistId,
+			authorization,
+		});
+	}
+
+	private async recurssiveGetPlaylist({
+		playlistId,
+		authorization,
+		playlist,
+	}: {
+		playlistId: string;
+		authorization: SpotifyLogin;
+		playlist?: SpotifyPlaylist & { next: string };
+	}): Promise<SpotifyPlaylist> {
+		const url = playlist?.next?.split?.('/v1')?.[1] ?? `/playlists/${playlistId}`;
+		const result = await this.api({ path: url, method: 'GET', authorization });
+
+		const playlistItems = result['tracks']?.['items'] ?? result['items'] ?? [];
+		const data = {
+			playlistId,
+			authorization,
+			playlist: {
+				id: playlist?.id ?? result['id'],
+				title: playlist?.title ?? result['name'],
+				length: 0,
+				url: playlist?.url ?? result['external_urls']?.['spotify'],
+				next: result['tracks']?.['next'] ?? result['next'],
+				items: [
+					...(playlist?.items ?? []),
+					...playlistItems.map((item: any) => ({
+						id: item['track']?.['id'],
+						title: item['track']?.['name'],
+						length: item['track']?.['duration_ms'],
+						url: item['track']?.['external_urls']?.['spotify'],
+						artist: { 
+							name: item['track']?.['artists']?.[0]?.['name'],
+							url: item['track']?.['artists']?.[0]?.['external_urls']?.['spotify']
+						}
+					}))
+				]
+			}
+		}
+
+		if (data.playlist.next) {
+			return await this.recurssiveGetPlaylist(data);
+		}
+
+		return {
+			...data.playlist,
+			length: data.playlist.items.length
+		};
 	}
 
 	private api<T>({

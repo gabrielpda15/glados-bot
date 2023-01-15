@@ -4,6 +4,9 @@ node_modules/
 # API keys and secrets
 .env
 
+# User config files
+.hintrc
+
 # Editors
 .vscode
 .idea

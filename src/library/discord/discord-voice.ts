@@ -1,18 +1,37 @@
 import { discordBot, hostAudioService, radioService, spotifyService, youtubeService } from '@app/main';
-import { AudioPlayer, createAudioPlayer, joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
+import { AudioPlayer, AudioResource, createAudioPlayer, joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
 import { APIEmbed, Snowflake, TextChannel, VoiceChannel } from 'discord.js';
+import { SpotifyPlaylist, SpotifyTrack } from '../spotify/spotify.service';
 import { createEmbed, log } from '../utils';
 import { YoutubePlaylist, YoutubeVideo } from '../youtube/youtube-service';
 
-export class VoiceTrack extends YoutubeVideo {
+export class VoiceTrack {
+	public title: string;
+	public length: number;
+	public url: string;
+	public type: 'youtube' | 'spotify';
 	public requestedBy?: Snowflake;
+	public artist: string;
 
-	public static fromYoutubeVideo(base: YoutubeVideo): VoiceTrack {
+	public static fromYoutubeVideo(video: YoutubeVideo, requestedBy: Snowflake): VoiceTrack {
 		const instance = new VoiceTrack();
-		for (let key in base) {
-			const value = (<any>base)[key];
-			if (typeof value != 'function') (<any>instance)[key] = value;
-		}
+		instance.title = video.title;
+		instance.length = video.length;
+		instance.url = video.url;
+		instance.artist = video.channel.name;
+		instance.type = 'youtube';
+		instance.requestedBy = requestedBy;
+		return instance;
+	}
+
+	public static fromSpotifyTrack(track: SpotifyTrack, requestedBy: Snowflake): VoiceTrack {
+		const instance = new VoiceTrack();
+		instance.title = track.title;
+		instance.length = track.length;
+		instance.url = track.url;
+		instance.artist = track.artist.name;
+		instance.type = 'spotify';
+		instance.requestedBy = requestedBy;
 		return instance;
 	}
 
@@ -29,17 +48,30 @@ export class VoiceTrack extends YoutubeVideo {
 
 		return embed.data;
 	}
+
+	public toString(): string {
+		const min = Math.floor(this.length / 60);
+		const sec = this.length - min * 60;
+		const time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+		return `[${this.title}](${this.url}) \`${time}\``;
+	}
 }
 
-export class VoicePlaylist extends YoutubePlaylist {
+export class VoicePlaylist {
+	public items: VoiceTrack[];
 	public requestedBy?: Snowflake;
 
-	public static fromYoutubePlaylist(base: YoutubePlaylist): VoicePlaylist {
+	public static fromYoutubePlaylist(playlist: YoutubePlaylist, requestedBy: Snowflake): VoicePlaylist {
 		const instance = new VoicePlaylist();
-		for (let key in base) {
-			const value = (<any>base)[key];
-			if (typeof value != 'function') (<any>instance)[key] = value;
-		}
+		instance.items = playlist.items.map(x => VoiceTrack.fromYoutubeVideo(x, requestedBy));
+		instance.requestedBy = requestedBy;
+		return instance;
+	}
+
+	public static fromSpotifyPlaylist(playlist: SpotifyPlaylist, requestedBy: Snowflake): VoicePlaylist {
+		const instance = new VoicePlaylist();
+		instance.items = playlist.items.map(x => VoiceTrack.fromSpotifyTrack(x, requestedBy));
+		instance.requestedBy = requestedBy;
 		return instance;
 	}
 
@@ -165,8 +197,15 @@ export class DiscordVoiceData {
 					this.isPlaying = true;
 				}
 
-				const stream = await youtubeService.getStream(this.queue[0].url, this.volume);
-				if (!stream) throw 'Youtube stream returned null';
+				const track = this.queue[0];
+
+				const streamByType: { [key: string]: () => Promise<AudioResource> } = {
+					youtube: () => youtubeService.getStream(track, this.volume),
+					spotify: () => spotifyService.getStream(track, this.volume),
+				};
+
+				const stream = await streamByType[track.type]();
+				if (!stream) throw 'Null stream returned from song';
 				this.player.play(stream);
 			}
 		} catch (err) {
