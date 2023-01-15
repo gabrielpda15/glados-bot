@@ -1,3 +1,4 @@
+import opn from 'open';
 import { request, RequestOptions } from 'https';
 import { v4 as uuid } from 'uuid';
 import { queriefy } from '../utils';
@@ -21,9 +22,8 @@ export class SpotifyAuthHandler {
 				url += `response_type=code&`;
 				url += `scope=${encodeURI(scope.join(' '))}&`;
 				url += `state=${encodeURI(this.state)}`;
-
-				const cp = await import('child_process');
-				const prs = cp.exec(`start "" "${url}"`);
+								
+				const prs = await opn(url);
 
 				prs.once('spawn', () => res());
 				prs.once('error', (err) => rej(err));
