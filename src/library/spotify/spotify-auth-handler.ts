@@ -3,9 +3,12 @@ import { request, RequestOptions } from 'https';
 import { v4 as uuid } from 'uuid';
 import { queriefy } from '../utils';
 import { SpotifyLogin } from './spotify-login';
+import { writeFileSync as fsWriteFile, readFileSync as fsReadFile } from 'fs';
+import { resolve as pathResolve } from 'path';
 
 const defaultScopes = ['user-read-currently-playing', 'user-modify-playback-state'];
-const callback = `http://localhost:${(process.env.PORT ?? 8888)}/callback`;
+const callback = `http://localhost:${process.env.PORT ?? 8888}/callback`;
+const secretsPath = pathResolve(__dirname, '../../../.secrets');
 
 export class SpotifyAuthHandler {
 	private state: string;
@@ -22,7 +25,7 @@ export class SpotifyAuthHandler {
 				url += `response_type=code&`;
 				url += `scope=${encodeURI(scope.join(' '))}&`;
 				url += `state=${encodeURI(this.state)}`;
-								
+
 				const prs = await opn(url);
 
 				prs.once('spawn', () => res());
@@ -31,6 +34,20 @@ export class SpotifyAuthHandler {
 				rej(err);
 			}
 		});
+	}
+
+	public async loginFromSecrets() {
+		const file = fsReadFile(secretsPath, { encoding: 'utf-8' });		
+		const obj = JSON.parse(file);
+
+		this.token = new SpotifyLogin();
+		this.token.accessToken = obj['accessToken'] ?? null;
+		this.token.expiresIn = obj['expiresIn'] ?? 0;
+		this.token.refreshToken = obj['refreshToken'] ?? null;
+		this.token.scope = obj['scope'] ?? [];
+		this.token.tokenType = obj['tokenType'] ?? null;
+
+		await this.refreshToken();
 	}
 
 	public async loginCallback(code: string, state: string, scope: string[] = defaultScopes) {
@@ -65,6 +82,7 @@ export class SpotifyAuthHandler {
 					response.on('data', (data: Buffer) => {
 						if (response.statusCode == 200) {
 							this.token = new SpotifyLogin(JSON.parse(data.toString()));
+							this.updateSecrets();
 							res({ statusCode: response.statusCode, data: JSON.parse(data.toString()) });
 						} else {
 							rej({ statusCode: response.statusCode, data: data.toString() });
@@ -111,6 +129,7 @@ export class SpotifyAuthHandler {
 							const result = JSON.parse(data.toString());
 							result['refresh_token'] = this.token.refreshToken;
 							this.token = new SpotifyLogin(result);
+							this.updateSecrets();
 							res({ statusCode: response.statusCode, data: result });
 						} else {
 							rej({ statusCode: response.statusCode, data: data.toString() });
@@ -124,6 +143,10 @@ export class SpotifyAuthHandler {
 				rej(err);
 			}
 		});
+	}
+
+	private updateSecrets() {
+		fsWriteFile(secretsPath, JSON.stringify(this.token, null, 4), { encoding: 'utf-8' });
 	}
 
 	public async getAuthorization(): Promise<SpotifyLogin> {

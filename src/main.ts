@@ -7,6 +7,8 @@ import { RadioService } from './library/voice/radio.service';
 import { HostAudioService } from './library/voice/host-audio.service';
 import { SpotifyService } from './library/spotify/spotify.service';
 import { WebService } from './library/web/web.service';
+import { existsSync as fsExist } from 'fs';
+import { resolve as pathResolve } from 'path';
 
 export const args = config();
 
@@ -39,7 +41,11 @@ async function main(): Promise<any> {
 
 	webService.start();
 
-	await spotifyService.auth.login();
+	if (!fsExist(pathResolve(__dirname, '../.secrets'))) {
+		await spotifyService.auth.login();
+	} else {
+		await spotifyService.auth.loginFromSecrets();
+	}
 
 	await discordBot.connect();
 }
