@@ -5,7 +5,7 @@ import { queriefy } from '../utils';
 import { SpotifyLogin } from './spotify-login';
 
 const defaultScopes = ['user-read-currently-playing', 'user-modify-playback-state'];
-const callback = 'http://localhost:8888/callback';
+const callback = `http://localhost:${(process.env.PORT ?? 8888)}/callback`;
 
 export class SpotifyAuthHandler {
 	private state: string;
