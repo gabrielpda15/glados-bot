@@ -140,16 +140,27 @@ enum ConsoleFormats {
 
 type ConsoleSeverity = 'err' | 'info' | 'warn' | 'debug' | 'succ';
 
-function log(message: any, source: string, severity: ConsoleSeverity): void {
+function log<T>(message: T, source: string, severity: ConsoleSeverity): void {
 	if (severity === 'debug' && process.env.DEBUG != 'true') return;
 
 	let severityString: string = severity == 'succ' ? 'info' : severity;
 	severityString = severity.padStart(5).toUpperCase();
 
+	const messageConverter: { [key: string]: () => string } = {
+		'string': () => message as string,
+		'number': () => message.toString(),
+		'bigint': () => message.toString(),
+		'boolean': () => message === true ? 'true' : 'false',
+		'function': () => message.toString(),
+		'object': () => JSON.stringify(message),
+		'symbol': () => message.toString(),
+		'undefined': () => 'undefined'
+	}
+
 	let result = `[${new Date().toLocaleString(process.env.LOCALE)}] `;
 	result += `[${source}] `;
 	result += `${severityString}: `;
-	result += ` ${message}`;
+	result += ` ${messageConverter[typeof message]()}`;
 
 	let colors: { [key: string]: string } = {
 		info: ConsoleFormats.FgWhite,
