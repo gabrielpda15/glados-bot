@@ -5,12 +5,8 @@ import { createEmbed } from '@app/library/utils';
 import {
 	ActionRowBuilder,
 	ButtonBuilder,
-	ButtonComponentData,
 	ButtonStyle,
-	CollectedInteraction,
 	ComponentType,
-	EmbedBuilder,
-	InteractionCollector,
 	Message,
 	PermissionsString,
 } from 'discord.js';
@@ -66,11 +62,8 @@ export class Queue implements DiscordCommand {
 		let desc = '';
 
 		for (let i = 1; i <= voice.queue.length; i++) {
-			const track = voice.queue[i - 1];
-			const min = Math.floor(track.length / 60);
-			const sec = track.length - min * 60;
-			const time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-			const toAdd = `\`${i.toString().padStart(2, '0')}\`. [${track.title}](${track.url}) \`${time}\`\n`;
+			const track = voice.queue[i - 1].toString();
+			const toAdd = `\`${i.toString().padStart(2, '0')}\`. ${track}\n`;
 			if ((desc + toAdd).length > 4096) {
 				desc = desc.slice(0, -1);
 				pages.push(desc);
