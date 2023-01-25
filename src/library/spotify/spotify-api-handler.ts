@@ -8,12 +8,12 @@ export class SpotifyApiHandler {
 		const result = await this.api({ path: `/tracks/${trackId}`, method: 'GET', authorization });
 		return {
 			id: trackId,
-			title: '',
-			length: 0,
+			title: result['name'],
+			length: Math.round((result['duration_ms'] ?? 0) / 1000),
 			url: `https://open.spotify.com/track/${trackId}`,
 			artist: {
-				name: '',
-				url: ''
+				name: result['artists']?.[0]?.['name'],
+				url: result['artists']?.[0]?.['external_urls']?.['spotify']
 			}
 		}
 	}
@@ -52,7 +52,7 @@ export class SpotifyApiHandler {
 					...playlistItems.map((item: any) => ({
 						id: item['track']?.['id'],
 						title: item['track']?.['name'],
-						length: item['track']?.['duration_ms'],
+						length: Math.round((item['track']?.['duration_ms'] ?? 0) / 1000),
 						url: item['track']?.['external_urls']?.['spotify'],
 						artist: { 
 							name: item['track']?.['artists']?.[0]?.['name'],
