@@ -53,7 +53,24 @@ export class VoiceTrack {
 		const min = Math.floor(this.length / 60);
 		const sec = this.length - min * 60;
 		const time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-		return `[${this.title}](${this.url}) \`${time}\``;
+		const title = this.type === 'youtube' ? this.title : this.artist + ' - ' + this.title;
+		return `[${title}](${this.url}) \`${time}\``;
+	}
+
+	public equals(track: VoiceTrack) {
+		return (
+			this.title === track.title &&
+			this.length === track.length &&
+			this.url === track.url &&
+			this.type === track.type &&
+			this.artist === track.artist
+		);
+	}
+
+	public equivalent(track: VoiceTrack) {
+		const normalize = (value: string) => value.normalize().trim().toLowerCase();
+		const compare = (a: string, b: string) => normalize(a) === normalize(b);
+		return compare(track.url, this.url) || (compare(track.title, this.title) && compare(track.artist, this.artist))
 	}
 }
 
@@ -63,14 +80,14 @@ export class VoicePlaylist {
 
 	public static fromYoutubePlaylist(playlist: YoutubePlaylist, requestedBy: Snowflake): VoicePlaylist {
 		const instance = new VoicePlaylist();
-		instance.items = playlist.items.map(x => VoiceTrack.fromYoutubeVideo(x, requestedBy));
+		instance.items = playlist.items.map((x) => VoiceTrack.fromYoutubeVideo(x, requestedBy));
 		instance.requestedBy = requestedBy;
 		return instance;
 	}
 
 	public static fromSpotifyPlaylist(playlist: SpotifyPlaylist, requestedBy: Snowflake): VoicePlaylist {
 		const instance = new VoicePlaylist();
-		instance.items = playlist.items.map(x => VoiceTrack.fromSpotifyTrack(x, requestedBy));
+		instance.items = playlist.items.map((x) => VoiceTrack.fromSpotifyTrack(x, requestedBy));
 		instance.requestedBy = requestedBy;
 		return instance;
 	}
@@ -90,9 +107,10 @@ export class VoicePlaylist {
 	}
 }
 
-export type VoiceQueue = VoiceTrack[];
 export type VoiceQueueLoopType = 'all' | 'one' | 'none';
 export type VoiceDataType = 'none' | 'youtube' | 'radio' | 'host_audio' | 'spotify';
+
+export class VoiceQueue extends Array<VoiceTrack> {}
 
 export class DiscordVoiceData {
 	private type: VoiceDataType;
@@ -120,7 +138,7 @@ export class DiscordVoiceData {
 		this.isPlaying = false;
 		this.type = 'none';
 		this.volume = 100;
-		this.queue = [];
+		this.queue = new VoiceQueue();
 		this.loop = 'none';
 	}
 
