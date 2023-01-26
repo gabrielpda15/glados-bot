@@ -10,6 +10,7 @@ export class Config implements DiscordCommand {
 	public name: string = 'Configuração';
 	public description: string = 'Comando base de configuração das minhas variaveis!';
 	public aliases: string[] = ['config'];
+	public parentAlias?: string = 'get';
 	public usage: string[] = ['', '<set|check>'];
 	public category: DiscordCommand.Category = DiscordCommand.Category.ADMINISTRATIVE;
 	public permission: PermissionsString = 'ManageGuild';

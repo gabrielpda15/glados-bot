@@ -307,6 +307,7 @@ export interface DiscordCommand {
 	defer: DiscordCommand.DeferType;
 	requiredArgs: number;
 	args: DiscordCommand.Argument[];
+	parentAlias?: string;
 
 	execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any>;
 }

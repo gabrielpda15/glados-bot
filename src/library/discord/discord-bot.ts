@@ -84,11 +84,21 @@ export class DiscordBot extends Client {
 					.setDescription(item.value.description)
 					.setDefaultMemberPermissions(PermissionFlagsBits[item.value.permission]);
 
-				for (let arg of item.value.args) {
-					arg.apply(slashCmd);
-				}
+				if (item.value.parentAlias) {
+					const slashSubCmd = new SlashCommandSubcommandBuilder()
+						.setName(item.value.parentAlias)
+						.setDescription(item.value.description);
 
-				// TODO: Verificar como fazer um comando padrão alem dos sub comandos
+					for (let arg of item.value.args) {
+						arg.apply(slashSubCmd);
+					}
+
+					slashCmd.addSubcommand(slashSubCmd);
+				} else {
+					for (let arg of item.value.args) {
+						arg.apply(slashCmd);
+					}
+				}
 
 				for (let subCmd of sc) {
 					const slashSubCmd = new SlashCommandSubcommandBuilder()
@@ -159,7 +169,7 @@ export class DiscordBot extends Client {
 		const instance = this.commands.get(id);
 		let result: DiscordCommand = null;
 
-		if (args.length > 0 && instance.hasSubcommands) {
+		if (args.length > 0 && instance.main.parentAlias !== args[0].toLowerCase() && instance.hasSubcommands) {
 			const subCmd = args[0].toLowerCase();
 			result = instance.getSubcommand(subCmd);
 		}

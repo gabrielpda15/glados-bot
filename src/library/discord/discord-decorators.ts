@@ -3,11 +3,13 @@ import { Dictionary } from '../types';
 import { DiscordCommand } from './discord-command';
 import { DiscordEvent } from './discord-event';
 
+type Constructor<T> = { new (): T };
+
 export const COMMAND_KEYS = 'commands-keys';
 export const SUBCOMMANDS_LIST = 'subcommands-map';
 
-export function Command(args?: { subcommands?: any[] }) {
-	return (target: any) => {
+export function Command(args?: { subcommands?: Constructor<DiscordCommand>[] }) {
+	return (target: Constructor<DiscordCommand>) => {
 		initializeCommands();
 
 		const instance: DiscordCommand = new target();
@@ -37,7 +39,7 @@ export function Command(args?: { subcommands?: any[] }) {
 export const EVENTS_KEYS = 'events-keys';
 
 export function Event<K extends keyof ClientEvents>(name: K) {
-	return (target: any) => {
+	return (target: Constructor<DiscordEvent<any>>) => {
 		initializeEvents();
 
 		const instance: DiscordEvent<any> = new target();
