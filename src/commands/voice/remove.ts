@@ -17,7 +17,7 @@ export class Remove implements DiscordCommand {
 	public permission: PermissionsString = null;
 	public onlyOwner: boolean = false;
 	public defer: DiscordCommand.DeferType = DiscordCommand.DeferType.NO;
-	public requiredArgs: number = 0;
+	public requiredArgs: number = 1;
 	public args: DiscordCommand.Argument[] = [
 		new DiscordCommand.Argument('Integer', 'posicao', 'Posição da música na queue', true),
 	];
