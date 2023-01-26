@@ -195,7 +195,7 @@ export class DiscordVoiceData {
 		}
 	}
 
-	public async playNext(): Promise<void> {
+	public async playNext(shouldShift: boolean = true): Promise<void> {
 		try {
 			if (this.type !== 'youtube') throw 'The current discord voice is not set to be youtube type';
 
@@ -204,8 +204,8 @@ export class DiscordVoiceData {
 				return;
 			} else {
 				if (this.isPlaying) {
-					if (this.loop == 'none') this.queue.shift();
-					else if (this.loop == 'all') this.queue.push(this.queue.shift());
+					if (this.loop == 'none' && shouldShift) this.queue.shift();
+					else if (this.loop == 'all' && shouldShift) this.queue.push(this.queue.shift());
 
 					if (this.queue.length == 0) {
 						this.connection.disconnect();
