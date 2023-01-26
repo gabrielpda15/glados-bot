@@ -30,42 +30,56 @@ export class Play implements DiscordCommand {
 	];
 
 	public async execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any> {
+		if (!this.validate(e)) return;
+
+		const result = await this.getTrackFromArg(e.args, e.input.member.user.id, e.bot);
+
+		if (result.error) {
+			await e.reply(result.error);
+			return;
+		}
+
+		await this.playAndReply(result, e);
+	}
+
+	protected async validate(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<boolean> {
 		const channel = await e.getMemberVoiceChannel();
 
 		if (!channel) {
 			await e.reply('Desculpe, mas você não está em um canal de voz!');
-			return;
+			return false;
 		}
 
 		if (!channel.joinable) {
 			await e.reply('Desculpe, mas não consigo entrar no mesmo canal de voz que você!');
-			return;
+			return false;
 		}
 
-		const youtubeType = youtubeService.validateUrl(e.args[0]);
-		const spotifyType = spotifyService.validateUrl(e.args[0]);
+		return true;
+	}
+
+	protected async getTrackFromArg(args: string[], user: string, bot: DiscordBot): Promise<PlayFuncResult> {
+		const youtubeType = youtubeService.validateUrl(args[0]);
+		const spotifyType = spotifyService.validateUrl(args[0]);
 
 		const spotifyTypeToFunc = {
-			[SpotifyUrlType.Track]: async () => await this.playSpotifyTrack(e.args[0], e.input.member.user.id),
+			[SpotifyUrlType.Track]: async () => await this.playSpotifyTrack(args[0], user),
 			[SpotifyUrlType.Playlist]: async () =>
-				await this.playSpotifyPlaylist(e.args[0], e.input.member.user.id, e.bot),
-			[SpotifyUrlType.Unknown]: async () => await this.playFromSearch(e.args.join(' '), e.input.member.user.id),
+				await this.playSpotifyPlaylist(args[0], user, bot),
+			[SpotifyUrlType.Unknown]: async () => await this.playFromSearch(args.join(' '), user),
 		};
 
 		const youtubeTypeToFunc = {
-			[YoutubeUrlType.Both]: async () => await this.playYoutubeVideo(e.args[0], e.input.member.user.id),
-			[YoutubeUrlType.Video]: async () => await this.playYoutubeVideo(e.args[0], e.input.member.user.id),
-			[YoutubeUrlType.Playlist]: async () => await this.playYoutubePlaylist(e.args[0], e.input.member.user.id),
+			[YoutubeUrlType.Both]: async () => await this.playYoutubeVideo(args[0], user),
+			[YoutubeUrlType.Video]: async () => await this.playYoutubeVideo(args[0], user),
+			[YoutubeUrlType.Playlist]: async () => await this.playYoutubePlaylist(args[0], user),
 			[YoutubeUrlType.Unknown]: async () => spotifyTypeToFunc[spotifyType](),
 		};
 
-		const funcResult = await youtubeTypeToFunc[youtubeType]();
+		return await youtubeTypeToFunc[youtubeType]();
+	}
 
-		if (funcResult.error) {
-			await e.reply(funcResult.error);
-			return;
-		}
-
+	protected async playAndReply(result: PlayFuncResult, e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<void> {
 		let voice: DiscordVoiceData = null;
 
 		try {
@@ -76,10 +90,10 @@ export class Play implements DiscordCommand {
 			return;
 		}
 
-		voice.queue.push(...funcResult.tracks);
+		voice.queue.push(...result.tracks);
 		if (!voice.isPlaying) await voice.playNext();
 
-		await e.reply([funcResult.embed], false);
+		await e.reply([result.embed], false);
 	}
 
 	private async playFromSearch(arg: string, user: string): Promise<PlayFuncResult> {
