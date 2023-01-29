@@ -1,5 +1,7 @@
 import {
 	APIEmbed,
+	ApplicationCommandOptionData,
+	ApplicationCommandOptionType,
 	Base,
 	ChatInputCommandInteraction,
 	CommandInteractionOptionResolver,
@@ -52,6 +54,19 @@ export namespace DiscordCommand {
 		| 'Enum';
 
 	export class Argument {
+		private static readonly typeMapper: { [key: string]: number } = {
+			Attachment: ApplicationCommandOptionType.Attachment,
+			Boolean: ApplicationCommandOptionType.Boolean,
+			Channel: ApplicationCommandOptionType.Channel,
+			Integer: ApplicationCommandOptionType.Integer,
+			Mention: ApplicationCommandOptionType.Mentionable,
+			Number: ApplicationCommandOptionType.Number,
+			Role: ApplicationCommandOptionType.Role,
+			String: ApplicationCommandOptionType.String,
+			User: ApplicationCommandOptionType.User,
+			Enum: ApplicationCommandOptionType.String
+		}
+
 		private static readonly funcMapper: { [key: string]: string } = {
 			Attachment: 'addAttachmentOption',
 			Boolean: 'addBooleanOption',
@@ -122,6 +137,16 @@ export namespace DiscordCommand {
 				value: (<any>options)[Argument.optMapper[this.type]](this.name, false),
 				isBasic: Argument.basicMapper[this.type],
 			};
+		}
+
+		public getOptions(): ApplicationCommandOptionData {
+			return {
+				name: this.name,
+				description: this.description,
+				type: Argument.typeMapper[this.type],
+				autocomplete: this.autocomplete,
+				required: this.required
+			}
 		}
 
 		public apply(cmd: SlashCommandSubcommandBuilder): void;
@@ -308,6 +333,7 @@ export interface DiscordCommand {
 	requiredArgs: number;
 	args: DiscordCommand.Argument[];
 	parentAlias?: string;
+	nsfw?: boolean;
 
 	execute(e: DiscordCommand.MessageExecuteArgs | DiscordCommand.InteractionExecuteArgs): Promise<any>;
 }
@@ -320,13 +346,12 @@ export interface DiscordCommandResult {
 
 export class DiscordCommandInstance {
 	private _main: DiscordCommand;
-
-	private subcommands: Dictionary<DiscordCommand>;
-	private subcommandsMapper: Dictionary<string>;
+	private _subcommands: Dictionary<DiscordCommand>;
+	private _subcommandsMapper: Dictionary<string>;
 
 	private constructor() {
-		this.subcommands = Dictionary.create<DiscordCommand>();
-		this.subcommandsMapper = Dictionary.create<string>();
+		this._subcommands = Dictionary.create<DiscordCommand>();
+		this._subcommandsMapper = Dictionary.create<string>();
 	}
 
 	public get main(): DiscordCommand {
@@ -334,13 +359,17 @@ export class DiscordCommandInstance {
 	}
 
 	public get hasSubcommands(): boolean {
-		return this.subcommands && this.subcommands.length() > 0;
+		return this._subcommands && this._subcommands.length() > 0;
+	}
+
+	public get subcommands(): DiscordCommand[] {
+		return this._subcommands.values();
 	}
 
 	public getSubcommand(cmd: string): DiscordCommand {
-		const id = this.subcommandsMapper[cmd];
+		const id = this._subcommandsMapper[cmd];
 		if (id == null) return null;
-		return this.subcommands[id];
+		return this._subcommands[id];
 	}
 
 	public static create(main: DiscordCommand, ...sub: DiscordCommand[]): DiscordCommandInstance {
@@ -352,12 +381,12 @@ export class DiscordCommandInstance {
 				let id: string;
 				do {
 					id = uuid();
-				} while (dci.subcommands.has(id));
+				} while (dci._subcommands.has(id));
 				item.aliases.forEach((cmd) => {
-					dci.subcommandsMapper[cmd] = id;
+					dci._subcommandsMapper[cmd] = id;
 				});
 
-				dci.subcommands.set(id, item);
+				dci._subcommands.set(id, item);
 			}
 		}
 
