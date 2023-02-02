@@ -57,5 +57,8 @@ async function main(): Promise<any> {
 		log(`Done! ${new Date().getTime() - startTime.getTime()}ms`, 'System', 'succ');
 	} catch (err: any) {
 		log(err, 'System', 'err');
+		if (err instanceof Error) {
+			log(err.stack, 'System', 'trace');
+		}		
 	}
 })();

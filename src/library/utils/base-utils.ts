@@ -138,7 +138,7 @@ enum ConsoleFormats {
 	BgWhite = '\x1b[47m',
 }
 
-type ConsoleSeverity = 'err' | 'info' | 'warn' | 'debug' | 'succ';
+type ConsoleSeverity = 'err' | 'info' | 'warn' | 'debug' | 'succ' | 'trace';
 
 function log<T>(message: T, source: string, severity: ConsoleSeverity): void {
 	if (severity === 'debug' && process.env.DEBUG != 'true') return;
@@ -166,8 +166,9 @@ function log<T>(message: T, source: string, severity: ConsoleSeverity): void {
 		info: ConsoleFormats.FgWhite,
 		succ: ConsoleFormats.FgGreen,
 		warn: ConsoleFormats.FgYellow,
-		err: ConsoleFormats.FgRed,
+		err: ConsoleFormats.Bright + ConsoleFormats.FgRed,
 		debug: ConsoleFormats.Bright + ConsoleFormats.FgBlack,
+		trace: ConsoleFormats.FgRed,
 	};
 
 	const color = colors[severity] + '%s' + ConsoleFormats.Reset;
