@@ -6,6 +6,30 @@ import { YoutubeCookie } from './youtube-cookie';
 import { log } from '../utils';
 import { VoiceTrack } from '../discord/discord-voice';
 
+export interface YoutubeError {
+	code: number;
+	message: string;
+	errors: {
+		message: string;
+		domain: string;
+		reason: string;
+	}[];
+}
+
+export function isYoutubeError(err: YoutubeError): boolean {
+	return (
+		typeof err.code === 'number' && 
+		typeof err.message === 'string' && 
+		typeof err.errors === 'object' && 
+		Array.isArray(err.errors) && 
+		err.errors.every((suberr) => 
+				typeof suberr.message === 'string' &&
+				typeof suberr.domain === 'string' &&
+				typeof suberr.reason === 'string'
+		)
+	);
+}
+
 export interface YoutubeVideo {
 	id: string;
 	title: string;

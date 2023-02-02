@@ -3,7 +3,7 @@ import { AudioPlayer, AudioResource, createAudioPlayer, joinVoiceChannel, VoiceC
 import { APIEmbed, Snowflake, TextChannel, VoiceChannel } from 'discord.js';
 import { SpotifyPlaylist, SpotifyTrack } from '../spotify/spotify.service';
 import { createEmbed, log } from '../utils';
-import { YoutubePlaylist, YoutubeVideo } from '../youtube/youtube-service';
+import { YoutubePlaylist, YoutubeVideo, YoutubeError, isYoutubeError } from '../youtube/youtube-service';
 
 export class VoiceTrack {
 	public title: string;
@@ -70,7 +70,7 @@ export class VoiceTrack {
 	public equivalent(track: VoiceTrack) {
 		const normalize = (value: string) => value.normalize().trim().toLowerCase();
 		const compare = (a: string, b: string) => normalize(a) === normalize(b);
-		return compare(track.url, this.url) || (compare(track.title, this.title) && compare(track.artist, this.artist))
+		return compare(track.url, this.url) || (compare(track.title, this.title) && compare(track.artist, this.artist));
 	}
 }
 
@@ -112,8 +112,28 @@ export type VoiceDataType = 'none' | 'youtube' | 'radio' | 'host_audio' | 'spoti
 
 export class VoiceQueue extends Array<VoiceTrack> {}
 
+const quotaExceededCountTimeout: { [key: number]: { time: number, message: string } } = {
+	1: {
+		time: 5000,
+		message: '5 segundos'
+	},
+	2: {
+		time: 60000,
+		message: '1 minuto'
+	},
+	3: {
+		time: 180000,
+		message: '3 minutos'
+	},
+	4: {
+		time: 600000,
+		message: '10 minutos'
+	},
+}
+
 export class DiscordVoiceData {
 	private type: VoiceDataType;
+	private quotaExceededCount: number;
 
 	public readonly connection: VoiceConnection;
 	public readonly player: AudioPlayer;
@@ -225,11 +245,37 @@ export class DiscordVoiceData {
 				const stream = await streamByType[track.type]();
 				if (!stream) throw 'Null stream returned from song';
 				this.player.play(stream);
+				this.quotaExceededCount = 0;
 			}
-		} catch (err) {
+		} catch (err: any) {
+			if (isYoutubeError(err)) {
+				const ytError: YoutubeError = err;
+				if (ytError.errors.some((error) => error.reason === 'quotaExceeded')) {
+					const timeout = quotaExceededCountTimeout[++this.quotaExceededCount];
+					if (!timeout) {
+						log(ytError.message, 'Youtube', 'err');
+						await this.textChannel.send(
+							'Opa! Parace que o Youtube não quer ser mais nosso amigo :sob:'
+						);
+						this.connection.disconnect();
+						return;
+					}
+
+					log(ytError.message, 'Youtube', 'err');
+					await this.textChannel.send(
+						`Opa! Parece que o YouTube ficou de mau com a gente :cry:\nVamos aguardar ${timeout.message} para ele voltar ser nosso amigo!`
+					);
+
+					setTimeout(async () => {
+						await this.playNext(false);
+					}, timeout.time);
+				}
+			}
+
 			log('Something went wrong trying to play the next song!', 'Discord', 'err');
 			if (err) log(<any>err, 'Discord', 'err');
 			await this.textChannel.send('Deu algo errado ao tentar reproduzir a próxima música!');
+			await this.playNext();
 		}
 	}
 }
