@@ -44,7 +44,6 @@
     "ffmpeg-static": "^5.1.0",
     "glob": "^8.1.0",
     "mysql": "^2.18.1",
-    "naudiodon": "^2.3.6",
     "open": "^8.4.0",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.1.4",
