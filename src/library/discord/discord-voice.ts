@@ -138,13 +138,13 @@ export class DiscordVoiceData {
 	public readonly connection: VoiceConnection;
 	public readonly player: AudioPlayer;
 	public readonly voiceChannel: VoiceChannel;
-	public readonly textChannel: TextChannel;
+	public readonly textChannel: TextChannel | VoiceChannel;
 	public isPlaying: boolean;
 	public volume: number;
 	public queue: VoiceQueue;
 	public loop: VoiceQueueLoopType;
 
-	constructor(voiceChannel: VoiceChannel, textChannel: TextChannel) {
+	constructor(voiceChannel: VoiceChannel, textChannel: TextChannel | VoiceChannel) {
 		this.voiceChannel = voiceChannel;
 		this.textChannel = textChannel;
 		this.connection = joinVoiceChannel({

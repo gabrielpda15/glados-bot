@@ -204,9 +204,11 @@ export namespace DiscordCommand {
 		public async getVoiceData(forceJoin: boolean = false): Promise<DiscordVoiceData> {
 			const voiceChannel = await this.getMemberVoiceChannel();
 			if (!voiceChannel) throw 'Desculpe, mas você não está em um canal de voz!';
-			let textChannel: TextChannel;
+			let textChannel: TextChannel | VoiceChannel;
 			if (this.isMessage() && this.input.channel instanceof TextChannel) textChannel = this.input.channel;
 			if (this.isInteraction() && this.input.channel instanceof TextChannel) textChannel = this.input.channel;
+			if (this.isMessage() && this.input.channel instanceof VoiceChannel) textChannel = this.input.channel;
+			if (this.isInteraction() && this.input.channel instanceof VoiceChannel) textChannel = this.input.channel;
 			if (!textChannel) throw 'Desculpe, mas você não está em um canal de voz!';
 
 			let voice: DiscordVoiceData = this.bot.cache.voice.get(voiceChannel.guildId);
