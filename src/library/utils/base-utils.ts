@@ -205,14 +205,10 @@ function normalizeGlob(matches: string[]) {
 	return matches;
 }
 
-function glob(pattern: string, debug: boolean = false): Promise<string[]> {
-	return new Promise((res, rej) => {
-		pattern = join('src', pattern).replace(/\\/g, '/');
-		g(pattern, { debug: debug }, (err, matches) => {
-			if (err) rej(err);
-			res(normalizeGlob(matches));
-		});
-	});
+async function glob(pattern: string, debug: boolean = false): Promise<string[]> {
+	pattern = join('src', pattern).replace(/\\/g, '/');
+	const result = await g(pattern);
+	return normalizeGlob(result);
 }
 
 export default {

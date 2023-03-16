@@ -7,6 +7,7 @@ import {
 	CommandInteractionOptionResolver,
 	Embed,
 	EmojiIdentifierResolvable,
+	InteractionEditReplyOptions,
 	InteractionReplyOptions,
 	Message,
 	MessageCreateOptions,
@@ -18,7 +19,6 @@ import {
 	SlashCommandSubcommandBuilder,
 	TextChannel,
 	VoiceChannel,
-	WebhookEditMessageOptions,
 } from 'discord.js';
 import { Dictionary } from '../types';
 import { DiscordBot } from './discord-bot';
@@ -310,7 +310,7 @@ export namespace DiscordCommand {
 		}
 
 		private async edit(
-			options: string | APIEmbed[] | MessagePayload | WebhookEditMessageOptions
+			options: string | APIEmbed[] | MessagePayload | InteractionEditReplyOptions
 		): Promise<Message> {
 			if (options instanceof Array<APIEmbed>) return this.input.editReply({ embeds: options });
 
