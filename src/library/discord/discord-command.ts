@@ -255,13 +255,13 @@ export namespace DiscordCommand {
 			return <VoiceChannel>this.input.member.voice.channel;
 		}
 
-		public async reply(options: string | APIEmbed[] | MessagePayload | MessageReplyOptions): Promise<Message> {
-			if (options instanceof Array<APIEmbed>) return await this.input.reply({ embeds: options });
+		public async reply(options: string | APIEmbed[] | MessagePayload | MessageReplyOptions): Promise<Message> {			
+			if (Array.isArray(options)) return await this.input.reply({ embeds: options });
 			return await this.input.reply(options);
 		}
 
 		public async send(options: string | APIEmbed[] | MessagePayload | MessageCreateOptions): Promise<Message> {
-			if (options instanceof Array<APIEmbed>) return await this.input.channel.send({ embeds: options });
+			if (Array.isArray(options)) return await this.input.channel.send({ embeds: options });
 			return await this.input.channel.send(options);
 		}
 
@@ -297,14 +297,14 @@ export namespace DiscordCommand {
 
 			if (typeof options == 'string')
 				return this.input.reply({ content: options, fetchReply: true, ephemeral: ephemeral });
-			if (options instanceof Array<APIEmbed>)
+			if (Array.isArray(options))
 				return this.input.reply({ embeds: options, fetchReply: true, ephemeral: ephemeral });
 
 			return await this.input.reply(options);
 		}
 
 		public async send(options: string | APIEmbed[] | MessagePayload | MessageCreateOptions): Promise<Message> {
-			if (options instanceof Array<APIEmbed>) return this.input.channel.send({ embeds: options });
+			if (Array.isArray(options)) return this.input.channel.send({ embeds: options });
 
 			return await this.input.channel.send(options);
 		}
@@ -312,7 +312,7 @@ export namespace DiscordCommand {
 		private async edit(
 			options: string | APIEmbed[] | MessagePayload | InteractionEditReplyOptions
 		): Promise<Message> {
-			if (options instanceof Array<APIEmbed>) return this.input.editReply({ embeds: options });
+			if (Array.isArray(options)) return this.input.editReply({ embeds: options });
 
 			return await this.input.editReply(options);
 		}

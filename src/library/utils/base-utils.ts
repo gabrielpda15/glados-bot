@@ -1,4 +1,4 @@
-import g from 'glob';
+import { globSync } from 'glob';
 import dotenv from 'dotenv';
 import { join, normalize, resolve } from 'path';
 import { existsSync, copyFileSync } from 'fs';
@@ -206,8 +206,8 @@ function normalizeGlob(matches: string[]) {
 }
 
 async function glob(pattern: string, debug: boolean = false): Promise<string[]> {
-	pattern = join('src', pattern).replace(/\\/g, '/');
-	const result = await g(pattern);
+	pattern = join('src', pattern).replace(/\\/g, '/');	
+	const result = globSync(pattern);
 	return normalizeGlob(result);
 }
 

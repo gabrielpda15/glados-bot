@@ -1,4 +1,3 @@
-import opn from 'open';
 import { request, RequestOptions } from 'https';
 import { v4 as uuid } from 'uuid';
 import { queriefy } from '../utils';
@@ -13,28 +12,6 @@ const secretsPath = pathResolve(__dirname, '../../../.secrets');
 export class SpotifyAuthHandler {
 	private state: string;
 	private token: SpotifyLogin;
-
-	public login(scope: string[] = defaultScopes): Promise<any> {
-		return new Promise<void>(async (res, rej) => {
-			try {
-				this.state = uuid();
-
-				let url = 'https://accounts.spotify.com/authorize?';
-				url += `client_id=${process.env.SPOTIFY_CLIENT}&`;
-				url += `redirect_uri=${encodeURI(callback)}&`;
-				url += `response_type=code&`;
-				url += `scope=${encodeURI(scope.join(' '))}&`;
-				url += `state=${encodeURI(this.state)}`;
-
-				const prs = await opn(url);
-
-				prs.once('spawn', () => res());
-				prs.once('error', (err) => rej(err));
-			} catch (err) {
-				rej(err);
-			}
-		});
-	}
 
 	public async loginFromSecrets() {
 		const file = fsReadFile(secretsPath, { encoding: 'utf-8' });		

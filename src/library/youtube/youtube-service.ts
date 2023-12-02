@@ -133,6 +133,7 @@ export class YoutubeService {
 				},
 			};
 		} catch (err) {
+			console.log(err);
 			log(<any>err, 'Youtube', 'err');
 			return null;
 		}

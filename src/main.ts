@@ -40,12 +40,8 @@ async function main(): Promise<any> {
 	await webService.initialize();
 
 	webService.start();
-
-	if (!fsExist(pathResolve(__dirname, '../.secrets'))) {
-		await spotifyService.auth.login();
-	} else {
-		await spotifyService.auth.loginFromSecrets();
-	}
+	
+	await spotifyService.auth.loginFromSecrets();
 
 	await discordBot.connect();
 }

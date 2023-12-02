@@ -7,7 +7,7 @@
     },
     "lib": [ "ES5", "ES6" ],
     "outDir": "build/src",
-    "target": "ES2021",
+    "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
